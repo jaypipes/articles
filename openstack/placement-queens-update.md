@@ -8,9 +8,9 @@ complete in the next few releases.
 
 1. [Recap of previous release accomplishments](#recap-of-previous-release-accomplishments)
 1. [Priorities for Queens release](#priorities-for-queens)
-  1. [Properly handling move operations](#properly-handling-move-operations)
-  1. [Alternate host lists and in-cell retries](#alternate-host-lists-and-in-cell-retries)
-  1. [Nested resource providers](#nested-resource-providers)
+    1. [Properly handling move operations](#properly-handling-move-operations)
+    1. [Alternate host lists and in-cell retries](#alternate-host-lists-and-in-cell-retries)
+    1. [Nested resource providers](#nested-resource-providers)
 
 ## Recap of previous release accomplishments
 
@@ -181,7 +181,25 @@ providers done for SR-IOV PF to VF relationships.
 
 ### Other items to try in Queens
 
+In addition to the above priority items, we are aiming to wrap up work on a
+number of other workstreams. While the focus for reviews will be the three
+priority items listed above, progress will still be made in these areas and
+reviews will be done on an as-possible basis.
+
 #### Completion of trait-flavor wiring
+
+This is an outstanding item from Pike that needs to be completed. The Placement
+API now supports listing traits -- simple string tags describing capabilities
+of a resource provider.
+
+However, a couple places still need to be code complete:
+
+* The flavor needs to contain a list of required traits
+* The scheduler needs to ask the Placement API to filter providers that have
+  all the required traits for a flavor
+* The virt drivers need to begin reporting traits against the compute node
+  resource providers instead of reporting an unstructured virt-driver-specific
+  bag of randomness in the `get_available_resource()` virt driver API call
 
 ## Beyond Queens
 
