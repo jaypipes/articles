@@ -11,6 +11,15 @@ items we want to complete in the next few releases.
     1. [Properly handling move operations](#properly-handling-move-operations)
     1. [Alternate host lists and in-cell retries](#alternate-host-lists-and-in-cell-retries)
     1. [Nested resource providers](#nested-resource-providers)
+1. [Other Queens stuff](#other-items-to-try-in-queens)
+    1. [Trait-flavor wiring](#completion-of-trait-flavor-wiring)
+    1. [Placement API HTTP cache headers](#cache-header-handling-in-placement-api)
+    1. [Placement API POST multiple allocations](#supporting-post-multiple-allocations-in-placement-api)
+    1. [Rudimentary vGPU support](#rudimentary-vgpu-support)
+1. [Beyond Queens](#beyond-queens)
+    1. [Generic device manager](#a-generic-device-manager)
+    1. [NUMA support](#numa-support)
+    1. [Shared resource providers](#shared-resource-providers)
 
 ## Recap of previous release accomplishments
 
@@ -41,15 +50,22 @@ called "[Alternate host lists and in-cell retries](#alternate-host-lists-and-in-
 
 ## Priorities for Queens
 
-At the Denver Project Team Gathering, the Nova contributor team resolved to
-work on three primary areas in the scheduler and resource placement functional
-areas. It should be noted that we understand that there are many, many
-additional feature requests in this area -- some having been on our radar for
-years. We recognize that it can be frustrating for operators and potential
-users to see some longstanding issues and items not receieve priority for
-Queens. However, there is only so much review bandwidth that the core team
-realistically has, and choices do need to be made. We welcome discussion of
-those choices both at the PTG and on the mailing list.
+At the Denver Project Team Gathering, the Nova contributor team
+[resolved](https://etherpad.openstack.org/p/nova-ptg-queens-placement) to work
+on three primary areas in the scheduler and resource placement functional
+areas:
+
+* Properly handling move operations
+* Alternate hosts and retry operations in cells
+* Nested resource providers
+
+It should be noted that we understand that there are many, many additional
+feature requests in this area -- some having been on our radar for years. We
+recognize that it can be frustrating for operators and potential users to see
+some longstanding issues and items not receieve priority for Queens. However,
+there is only so much review bandwidth that the core team realistically has,
+and choices do need to be made. We welcome discussion of those choices both at
+the PTG and on the mailing list.
 
 It should also be noted that while there are only three priority workstreams
 for the scheduler and resource placement area in Queens, that does **NOT** mean
@@ -115,15 +131,17 @@ host that the exact same fate might befall it and cause yet another retry.
 
 Claiming resources within the `nova-scheduler` instead of on the destination
 compute host means that we can dramatically reduce the length of time and
-complexity of the primary cause of retry operations. We now attempt to claim
-resources against the chosen destination host from the `nova-scheduler`
-service. If the Placement API returns a `200 OK`, we know that the instance has
-already consumed resources on the destination host and the only thing that can
-trigger a retry would be some sort of weird host failure -- something that is
-not a commonly-occurring event. If the Placement API returns a `409 Conflict`,
-we can tell from the information returned in the error response whether the
-failure was due to a concurrent update or whether the destination host no
-longer has any capacity to house the instance.
+complexity of the primary cause of retry operations: resource contention and
+race conditions during on-compute-host claiming.
+
+We now attempt to claim resources against the chosen destination host from the
+`nova-scheduler` service. If the Placement API returns a `200 OK`, we know that
+the instance has already consumed resources on the destination host and the
+only thing that can trigger a retry would be some sort of weird host failure --
+something that is not a commonly-occurring event. If the Placement API returns
+a `409 Conflict`, we can tell from the information returned in the error
+response whether the failure was due to a concurrent update or whether the
+destination host no longer has any capacity to house the instance.
 
 If another process ended up claiming resources on the destination host in the
 time interval between initial selection and the attempt to claim resources for
@@ -137,7 +155,7 @@ The second reason we wanted to move the claiming of resources into the
 `nova-scheduler` was because of the Cells V2 design. Recall that the Cells V2
 architecture is designed to remove the peculiarities and segregated API layers
 of the old Cells V1 codebase. Having a single API control plane in Cells V2
-means simpler code and thus easier to maintain code.
+means simpler and thus easier to maintain code.
 
 However, one of the design tenets of the Cells V2 architecture is that once a
 launch (or move) instance request gets to the target cell, there is no "upcall"
@@ -165,7 +183,7 @@ resources. Examples of this relationship include NUMA cells and their
 containing host, SR-IOV physical functions and their containing host, and
 physical GPU groups and their containing host.
 
-Let's say we have two compute nodes. Both compute nodes have 2 physical
+Let's say we have two compute nodes. Both compute nodes have 2 SR-IOV physical
 functions each. The first compute node has been set up so each physical
 function has an inventory of 8 virtual functions. The second compute node has
 been set up so that one of the physical functions is marked as passthrough --
@@ -208,10 +226,69 @@ However, a couple places still need to be code complete:
   resource providers instead of reporting an unstructured virt-driver-specific
   bag of randomness in the `get_available_resource()` virt driver API call
 
+#### Cache header handling in Placement API
+
+Chris Dent has [proposed](http://specs.openstack.org/openstack/nova-specs/specs/queens/approved/placement-cache-headers.html)
+adding `Last-Modified` and other HTTP headers to some resource endpoints in the
+Placement REST API. This is important to ensure appropriate behaviour by
+caching proxies and the amount of work to complete this effort seems
+manageable.
+
+#### Supporting POST multiple allocations in Placement API
+
+This [spec](http://specs.openstack.org/openstack/nova-specs/specs/queens/approved/post-allocations.html)
+is actually an enabler for the move operations cleanup work. Chris
+proposes to allow a `POST /allocations` call (we currently only support a `PUT
+/allocations/{copnsumer_uuid}` call) that would atomically write multiple
+allocation records for multiple consumers in a single transaction. This would
+allow us to do the "allocation transfer from instance to migration UUID" that
+is part of Dan Smith's solution for move operation resource tracking.
+
+#### Rudimentary vGPU support
+
+Though it unlikely that we will be able to implement the entire
+[proposed vGPU spec](http://specs.openstack.org/openstack/nova-specs/specs/queens/approved/virt-add-support-for-vgpu.html)
+from Citrix's Jianghua Wang, we will try to at least have some rudimentary support for a `VGPU` resource class completed in Queens.
+
+This initial support means that there may not be support for multiple GPU types
+or pGPU pools (in other words, only a single inventory record of `VGPU` per
+compute host will be supported).
+
 ## Beyond Queens
+
+### A generic device manager
+
+Eric Fried and I have been discussing ideas around a [generic device manager](https://etherpad.openstack.org/p/nova-ptg-queens-generic-device-management)
+that would replace much of the code in the existing
+[`nova/pci/`](https://github.com/openstack/nova/tree/master/nova/pci) module.
+We'll probably move on this initiative in early Rocky.
 
 ### NUMA support
 
-### Shared resource provider testing and cleanup
+Even though the nested resource providers functionality was designed with NUMA
+topologies in mind, actually being able to replace the
+[`NUMATopologyFilter`](https://github.com/openstack/nova/blob/master/nova/scheduler/filters/numa_topology_filter.py)
+in the Nova scheduler with an equivalent functionality in the Placement API is
+still a long shot, even for the Rocky release.
 
-### Generic device manager
+The way NUMA support is implemented in Nova is highly coupled with support for
+huge pages, CPU pinning, emulator I/O thread pinning, and even the PCI device
+manager (for things like NUMA affinity for PCI devices).
+
+It's likely that for the foreseeable future, the `NUMATopologyFilter` will stay
+in the Nova scheduler as a complex custom scheduling filter/weigher, and we
+will slowly modify the virt driver interface and resource tracker on the
+`nova-compute` node to report NUMA cells as resource providers to the Placement
+API, gradually replacing some pieces of functionality from the
+`NUMATopologyFilter` with queries against the Placement database.
+
+### Shared resource providers
+
+The Placement API allows the representation of a resource provider that shares
+its resources with other providers via an aggregate association. These resource
+providersare often called "shared resource providers" though a more appropriate
+term would be "sharing resource providers".
+
+We need to clean up and add functional testing for shared storage and routed
+network IP pool use cases and make sure the resource reporting and tracking is
+done accurately.
