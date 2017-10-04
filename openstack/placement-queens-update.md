@@ -152,10 +152,10 @@ destination host.  We do all this without ever sending the launch request down
 to a target compute host.
 
 The second reason we wanted to move the claiming of resources into the
-`nova-scheduler` was because of the Cells V2 design. Recall that the `Cells V2
-architecture`_ is designed to remove the peculiarities and segregated API layers
-of the old Cells V1 codebase. Having a single API control plane in Cells V2
-means simpler and thus easier to maintain code.
+`nova-scheduler` was because of the Cells V2 design. Recall that the [`Cells V2
+architecture`][cellsv2] is designed to remove the peculiarities and segregated
+API layers of the old Cells V1 codebase. Having a single API control plane in
+Cells V2 means simpler and thus easier to maintain code.
 
 However, one of the design tenets of the Cells V2 architecture is that once a
 launch (or move) instance request gets to the target cell, there is no "upcall"
@@ -173,7 +173,7 @@ retry the launch against an alternative destination, claiming the instance's
 resources on that alternative host without the cell conductor needing to
 contact the higher API/scheduler layer.
 
-.. Cells V2 architecture: https://docs.openstack.org/nova/pike/user/cellsv2_layout.html#multiple-cells
+[cellsv2]: https://docs.openstack.org/nova/pike/user/cellsv2_layout.html#multiple-cells
 
 ### Nested resource providers
 
