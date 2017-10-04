@@ -1,10 +1,10 @@
 # An Update on the Placement API and Scheduler plans for Queens
 
 This article provides an update on the progress that has been made by the
-OpenStack contributor community in the area of the Nova scheduler and Placement
-services. I'll also outline the blueprints we are tackling in the Queens
-release cycle and provide a roadmap for the big ticket items we want to
-complete in the next few releases.
+OpenStack contributor community over the last few releases in the area of the
+Nova scheduler and Placement services. I'll also outline the blueprints we are
+tackling in the Queens release cycle and provide a roadmap for the big ticket
+items we want to complete in the next few releases.
 
 1. [Recap of previous release accomplishments](#recap-of-previous-release-accomplishments)
 1. [Priorities for Queens release](#priorities-for-queens)
@@ -14,23 +14,30 @@ complete in the next few releases.
 
 ## Recap of previous release accomplishments
 
-Recall that the Placement API was exposed as a separate API endpoint in the
+Recall that the Placement API was published as a separate API endpoint in the
 Newton release of OpenStack.
 
+The [Placement API](https://developer.openstack.org/api-ref/placement/) exposes
+data used in tracking inventory, resource consumption, grouping and sharing of
+resources, and string capability tags that we call "traits".
+
 Since then, the team has been steadily improving the API and integrating it
-further into Nova. In the Newton release focused mainly on getting the
+further into Nova. The Newton release focused mainly on getting the
 `nova-compute` workers to **properly inventory** local (to the compute node)
 resources and send those inventory records to the Placement API.
 
 In Ocata, we began the integration of the `nova-scheduler` service with the
 Placement API. We modified the scheduler to make use of the Placement API in
-**filtering compute nodes** that met some basic resource requests.
+**filtering compute nodes** that met some basic resource requests. We also
+added a mechanism, called [aggregates](https://developer.openstack.org/api-ref/placement/#resource-provider-aggregates),
+for grouping providers of resources.
 
-In the Pike release we focused on moving the location of where we **claim
-resources** from the `nova-compute` worker to the `nova-scheduler` service. The
+In the Pike release we focused on moving the location of where we [**claim
+resources**](http://specs.openstack.org/openstack/nova-specs/specs/pike/implemented/placement-claims.html)
+from the `nova-compute` worker to the `nova-scheduler` service. The
 reason for this focus was two-fold: performance/scale and alignment with the
-Cells V2 architecture. I'll cover the details of this in the section below
-called "Alternate host lists and in-cell retries".
+Cells V2 architecture. I cover the details of this in the section below
+called "[Alternate host lists and in-cell retries](#alternate-host-lists-and-in-cell-retries)".
 
 ## Priorities for Queens
 
