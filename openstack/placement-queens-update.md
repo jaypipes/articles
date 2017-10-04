@@ -105,7 +105,7 @@ constraints we weren't able to implement his solution in Pike.
 
 Now that we're in Queens, we're prioritizing Dan's solution, which is to change
 the ownership of allocation records on the source (before move) host from the
-compute node UUID to the UUID of the migration object itself. This allows the
+instance UUID to the UUID of the migration object itself. This allows the
 allocation of resources on the destination host to be allocated to the instance
 UUID and, upon successful move, we merely delete the allocations consumed by
 the migration UUID. No more messing around with doubled-up allocations.
@@ -152,8 +152,8 @@ destination host.  We do all this without ever sending the launch request down
 to a target compute host.
 
 The second reason we wanted to move the claiming of resources into the
-`nova-scheduler` was because of the Cells V2 design. Recall that the Cells V2
-architecture is designed to remove the peculiarities and segregated API layers
+`nova-scheduler` was because of the Cells V2 design. Recall that the `Cells V2
+architecture`_ is designed to remove the peculiarities and segregated API layers
 of the old Cells V1 codebase. Having a single API control plane in Cells V2
 means simpler and thus easier to maintain code.
 
@@ -165,13 +165,15 @@ relies on the compute host which failed the initial resource claim being able
 to call "back up" to the scheduler to identify another host to attempt the
 launch on.
 
-[Ed Smith is leading the effort](https://blueprints.launchpad.net/nova/+spec/return-alternate-hosts)
+[Ed Leafe is leading the effort](https://blueprints.launchpad.net/nova/+spec/return-alternate-hosts)
 in Queens to have the scheduler pass a set of alternate host and allocation
 information from the API/scheduler layer down into a target cell. This
 alternate host and allocation information will be used by the cell conductor to
 retry the launch against an alternative destination, claiming the instance's
 resources on that alternative host without the cell conductor needing to
 contact the higher API/scheduler layer.
+
+.. Cells V2 architecture: https://docs.openstack.org/nova/pike/user/cellsv2_layout.html#multiple-cells
 
 ### Nested resource providers
 
@@ -239,7 +241,7 @@ manageable.
 This [spec](http://specs.openstack.org/openstack/nova-specs/specs/queens/approved/post-allocations.html)
 is actually an enabler for the move operations cleanup work. Chris
 proposes to allow a `POST /allocations` call (we currently only support a `PUT
-/allocations/{copnsumer_uuid}` call) that would atomically write multiple
+/allocations/{consumer_uuid}` call) that would atomically write multiple
 allocation records for multiple consumers in a single transaction. This would
 allow us to do the "allocation transfer from instance to migration UUID" that
 is part of Dan Smith's solution for move operation resource tracking.
