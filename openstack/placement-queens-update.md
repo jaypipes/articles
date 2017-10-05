@@ -13,6 +13,7 @@ items we want to complete in the next few releases.
     1. [Nested resource providers](#nested-resource-providers)
 1. [Other Queens stuff](#other-items-to-try-in-queens)
     1. [Trait-flavor wiring](#completion-of-trait-flavor-wiring)
+    1. [Ironic virt driver traits](#ironic-virt-driver-trait-handling)
     1. [Placement API HTTP cache headers](#cache-header-handling-in-placement-api)
     1. [Placement API POST multiple allocations](#supporting-post-multiple-allocations-in-placement-api)
     1. [Rudimentary vGPU support](#rudimentary-vgpu-support)
@@ -228,6 +229,17 @@ However, a couple places still need to be code complete:
   resource providers instead of reporting an unstructured virt-driver-specific
   bag of randomness in the `get_available_resource()` virt driver API call
 
+#### Ironic virt driver traits handling
+
+As mentioned above, the virt drivers need to start reporting traits against the
+compute node resource provider. The Ironic driver, however, is a bit different,
+primarily because it handles multiple compute node resource provider records
+(there is a resource provider record for each Ironic baremetal node in the
+deployment).
+
+John Garbutt is [leading the effort](http://specs.openstack.org/openstack/nova-specs/specs/queens/approved/ironic-driver-traits.html)
+in wiring the Ironic API's support for node traits into the Ironic virt driver.
+
 #### Cache header handling in Placement API
 
 Chris Dent has [proposed](http://specs.openstack.org/openstack/nova-specs/specs/queens/approved/placement-cache-headers.html)
@@ -250,7 +262,8 @@ is part of Dan Smith's solution for move operation resource tracking.
 
 Though it unlikely that we will be able to implement the entire
 [proposed vGPU spec](http://specs.openstack.org/openstack/nova-specs/specs/queens/approved/virt-add-support-for-vgpu.html)
-from Citrix's Jianghua Wang, we will try to at least have some rudimentary support for a `VGPU` resource class completed in Queens.
+from Citrix's Jianghua Wang, we will try to at least have some rudimentary
+support for a `VGPU` resource class completed in Queens.
 
 This initial support means that there may not be support for multiple GPU types
 or pGPU pools (in other words, only a single inventory record of `VGPU` per
