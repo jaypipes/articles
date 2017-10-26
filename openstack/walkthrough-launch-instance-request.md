@@ -1,20 +1,29 @@
 # Walkthrough of a typical Nova boot request
 
-This article does an in-depth walkthrough of a typical boot request that a user
-might execute against the OpenStack Compute API. We describe each of the many
-components involved in the launch request and the structure of the payloads
-sent and received in the communication between these components.
+This article provides an in-depth walkthrough of a typical boot request that a
+user might execute against the OpenStack Compute API. We describe each of the
+many components involved in the launch request and the structure of the
+payloads sent and received in the communication between these components.
 
-Talking about this boot request should provider some shared terminology and
+Talking about this boot request should provide some shared terminology and
 allow me to introduce some of the fundamental components that are written about
 in other articles.
 
 The boot request described here is deliberately simple. We want to start with
 the basics and then iteratively add more complex concepts in later sections.
 
+The OpenStack Pike release is used for this walkthrough. Where possible, we've
+noted differences between earlier versions of OpenStack that affect the
+described processes.
+
+1. [The boot request](#the-boot-request-from-the-user)
+    1. [The flavor](#the-flavor)
+    1. [The image](#the-image)
+1. [API server receives boot request](#openstack-compute-api-server-receives-boot-request)
+
 ## The boot request from the user
 
-OK, our user, let's call her Alice, wants to launch a virtual machine that will
+Our user, let's call her Alice, wants to launch a virtual machine that will
 host her simple single-server web application.
 
 She may end up using the [openstack CLI tool's `server create`
@@ -22,7 +31,7 @@ command](https://docs.openstack.org/python-openstackclient/latest/cli/command-ob
 Or she may use the [Horizon web UI](https://docs.openstack.org/horizon/latest/)
 for her OpenStack deployment.
 
-However, regardless of which tool Alice uses to launch her instance, that tool
+Regardless of which tool Alice uses to launch her instance, that tool
 will inevitably end up making an HTTP request to the [`POST
 /servers`](https://developer.openstack.org/api-ref/compute/#create-server)
 OpenStack Compute HTTP API.
@@ -34,10 +43,12 @@ couple of the important ones.
 ### The flavor
 
 The `flavorRef` element of the payload identifies the "flavor" of machine that
-you wish to launch. The flavor is a collection of attributes that describe the
-sizing of the machine and certain properties about the target host that the
-machine expects to find. The `flavorRef` points at a flavor object that can be
-retrieved using [`GET /flavors/{flavorRef}`](https://developer.openstack.org/api-ref/compute/#show-flavor-details).
+you wish to launch.
+
+The flavor is a collection of attributes that describe the sizing of the
+machine and certain properties about the target host that the machine expects
+to find. The `flavorRef` points at a flavor object that can be retrieved using
+[`GET /flavors/{flavorRef}`](https://developer.openstack.org/api-ref/compute/#show-flavor-details).
 
 Properties of the flavor that refer to machine sizing include:
 
@@ -52,8 +63,6 @@ target host are kept in something called the [flavor's "extra\_specs"](https://d
 These required target host attributes are visible to the end user, however the
 flavor itself is intended to hide these implementation details from the user.
 
-TODO(jaypipes): Show some example common flavor extra specs
-
 ### The image
 
 The `imageRef` element of the payload identifies the bootable virtual machine
@@ -65,4 +74,21 @@ this image as its root/boot disk. Confusingly, while this set of key/value
 pairs is identical in concept and function to the flavor "extra\_specs", for
 images, this data is called "metadata" instead.
 
-TODO(jaypipes): Show some example common image metadata
+## OpenStack Compute API server receives boot request
+
+The HTTP `POST /servers` request that describes Alice's request to boot her
+server is sent to the OpenStack Compute API server by the client that Alice
+uses. This server is called `nova-api` and handles all incoming user requests.
+
+For most "action requests" like `POST /servers`, the `nova-api` server
+predominantly is responsible for doing some basic HTTP request payload
+validation, asynchronously sending off one or more requests to other Nova
+services, and finally returning an `HTTP 202` response to the user.
+
+![User boot request to nova-api](images/nova-api-receives-boot-request.png "nova-api receives a boot request")
+
+**Note**: The `HTTP 202` response indicates to the calling user that the
+request to perform some action has been successfully received and that the
+request will be processed. It does **not** mean that the operation being
+requested to perform (in this case, to launch a server instance) has completed
+successfully.
