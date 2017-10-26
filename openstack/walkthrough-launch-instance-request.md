@@ -107,7 +107,7 @@ directory. For example, the `POST /servers` HTTP call is handled by the
 ### Construct "build request"
 
 Once the basic HTTP payload has been validated, `nova-api`'s next step is to
-[create the "build request"](https://github.com/openstack/nova/blob/stable/pike/nova/compute/api.py#L880.
+[create the "build request"](https://github.com/openstack/nova/blob/stable/pike/nova/compute/api.py#L880).
 The build request contains information from the user's boot request along with
 lots of other important information:
 
@@ -129,7 +129,20 @@ function at a cell level. These `nova-conductor` services are called either
 
 ## Super conductor coordinates placement and targeted cell calls
 
+Once the top-level `nova-conductor` (the super conductor) [receives the request](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L1018)
+from the `nova-api` service, the super conductor begins a process of
+determining which compute host can house the new instance and sending an
+asynchronous message to that selected target compute host to spawn the instance
+on its hypervisor.
+
+![nova-conductor coordination](images/nova-conductor-coordination.png "nova-conductor coordinates scheduling and sending build instructions to target host")
+
 ### Call scheduler `select_destinations()`
+
+The first step in the `nova-conductor`'s coordination process is to ask the
+`nova-scheduler` service to determine which compute host has the capacity to
+handle the new instance. The super conductor calls the `nova-scheduler`'s
+[`select_destinations()`](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L625) RPC method to do this.
 
 #### Scheduler asks Placement for possible resource providers
 
