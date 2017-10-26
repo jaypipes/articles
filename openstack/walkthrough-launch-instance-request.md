@@ -20,6 +20,10 @@ described processes.
     1. [The flavor](#the-flavor)
     1. [The image](#the-image)
 1. [API server receives boot request](#openstack-compute-api-server-receives-boot-request)
+    1. [Validate request](#validate-http-payload)
+    1. [Construct build request](#construct-build-request)
+    1. [Send build request to conductor](#send-build-request-to-conductor)
+1. [Super conductor starts coordinating](#super-conductor-coordinates-placement-and-target-cell-calls)
 
 ## The boot request from the user
 
@@ -92,3 +96,41 @@ request to perform some action has been successfully received and that the
 request will be processed. It does **not** mean that the operation being
 requested to perform (in this case, to launch a server instance) has completed
 successfully.
+
+### Validate HTTP payload
+
+Each HTTP resource endpoint is handled by a method on a controller class. These
+controller classes are all in the `nova/api/openstack/compute` source code
+directory. For example, the `POST /servers` HTTP call is handled by the
+[`nova.api.openstack.compute.servers.ServersController.create()`](https://github.com/openstack/nova/blob/stable/pike/nova/api/openstack/compute/servers.py#L453) method.
+
+### Construct "build request"
+
+Once the basic HTTP payload has been validated, `nova-api`'s next step is to
+[create the "build request"](https://github.com/openstack/nova/blob/stable/pike/nova/compute/api.py#L880.
+The build request contains information from the user's boot request along with
+lots of other important information:
+
+* a request UUID to identify the specific request from the user
+* a pre-generated UUID to identify the to-be-created instance(s)
+* block devices to be created for the instance
+* networks, ports and IP addresses for the instance
+* server "groups" that the instance belongs to
+* user-defined tags to associate with the instance
+
+### Send build request to conductor
+
+Once the build requests (one per requested instance) have been created,
+`nova-api` [sends these build request objects](https://github.com/openstack/nova/blob/stable/pike/nova/compute/api.py#L1170) to the **top-level** `nova-conductor` service
+via an async/cast RPC message. This top-level `nova-conductor` service is known
+as the "super conductor". There are other `nova-conductor` services that
+function at a cell level. These `nova-conductor` services are called either
+"cell conductors" or "cell-local conductors".
+
+## Super conductor coordinates placement and targeted cell calls
+
+### Call scheduler `select_destinations()`
+
+#### Scheduler asks Placement for possible resource providers
+
+### Send build instruction to selected host in cell
