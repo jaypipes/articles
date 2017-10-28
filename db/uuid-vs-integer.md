@@ -28,6 +28,7 @@ demonstrate the impact of using one strategy over another.
 1. [Application data patterns](#application-data-patterns)
     1. [Data-access patterns](#data-access-patterns)
     1. [Data-write patterns](#data-write-patterns)
+1. [Database server-configurations](#database-server-configurations)
 
 ## Questions to answer
 
@@ -113,3 +114,14 @@ TOOD
 #### Multi-table transactions
 
 TODO
+
+## Database server configurations
+
+This article runs a series of tests against a set of open source database
+server configurations to see if there are noteworthy differences between the
+performance of our schema design strategies.
+
+The database server configurations we test are the following:
+
+* MySQL Server 5.7 with InnoDB storage engine
+* PostgreSQL 9.6
