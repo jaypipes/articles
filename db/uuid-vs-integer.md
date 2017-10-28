@@ -21,6 +21,13 @@ demonstrate the impact of using one strategy over another.
     1. [Read query performance](#read-query-questions)
     1. [Write query performance](#write-query-questions)
     1. [Scale-out questions](#scale-out-questions)
+1. [Schema design strategies](#schema-design-strategies)
+    1. [A: Auto-inc integer PK, no UUIDs](#schema-design-a-auto-incrementing-integer-primary-key-no-uuids)
+    1. [B: UUID PK](#schema-design-b-uuid-pk)
+    1. [C: Auto-inc integer PK, external UUIDs](#schema-design-c-auto-incrementing-integer-primary-key-external-uuids)
+1. [Application data patterns](#application-data-patterns)
+    1. [Data-access patterns](#data-access-patterns)
+    1. [Data-write patterns](#data-write-patterns)
 
 ## Questions to answer
 
@@ -50,9 +57,9 @@ examine in this article:
 
 * Schema design A: Auto-incrementing integer primary key, no UUIDs
 * Schema design B: UUID primary key
-* Schema design C: Auto-increment integer primary key, UUID external
+* Schema design C: Auto-increment integer primary key, external UUIDs
 
-### Schema design A: Auto-incrementing integer primary key, no UUID
+### Schema design A: Auto-incrementing integer primary key, no UUIDs
 
 TODO
 
@@ -60,7 +67,7 @@ TODO
 
 TODO
 
-### Schema design C: Auto-incrementing integer primary key, UUID external
+### Schema design C: Auto-incrementing integer primary key, UUID externals
 
 TODO
 
@@ -73,8 +80,36 @@ TODO
 * Self-referential single-table lookup
 * Self-referential multi-table lookup
 
+#### Single-table external key lookup
+
+TODO
+
+#### Multi-table external key lookup
+
+TODO
+
+#### Self-referential single-table lookup
+
+TODO
+
+#### Self-referential multi-table lookup
+
+TODO
+
 ### Data-write patterns
 
-* Batched INSERTs, Minimal UPDATEs or DELETEs
+* Batched INSERTs, minimal UPDATEs or DELETEs
 * Single-record INSERTs, UPDATEs, and DELETEs
 * Multi-table transactions
+
+#### Batched INSERTs, minimal UPDATEs or DELETEs
+
+TODO
+
+#### Single-record INSERTs, UPDATEs and DELETEs
+
+TOOD
+
+#### Multi-table transactions
+
+TODO
