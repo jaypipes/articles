@@ -29,6 +29,11 @@ demonstrate the impact of using one strategy over another.
     1. [Data-access patterns](#data-access-patterns)
     1. [Data-write patterns](#data-write-patterns)
 1. [Database server-configurations](#database-server-configurations)
+    1. [MySQL Server](#mysql-server)
+    1. [PostgreSQL](#postgresql)
+1. [Application database schemas](#application-databases)
+    1. [Brick-and-mortar store](#brick-and-mortar-store)
+    1. [Employee Directory](#employee-directory)
 
 ## Questions to answer
 
@@ -125,3 +130,33 @@ The database server configurations we test are the following:
 
 * MySQL Server 5.7 with InnoDB storage engine
 * PostgreSQL 9.6
+
+### MySQL Server
+
+TODO
+
+### PostgreSQL
+
+TODO
+
+## Application database schemas
+
+I've tried as much as possible to do the comparison tests and benchmarks in
+this article against database schemas that represent realistic applications
+that might use an RDBMS for primary backend storage. To explore all the data
+access patterns I wanted to explore, I created two different application
+schemas, one for a "brick-and-mortar store" and another for a representing a
+large hierarchical organization's employee directory.
+
+### Brick and mortar store
+
+The brick-and-mortar storage application is all about recording information for
+an imaginary home-goods store: orders, customer, suppliers, products, etc.
+
+### Employee directory
+
+The employee directory application models a large organization's need for
+employees to be able to find information about employees and the structure of
+the organization. This schema and application will be used in comparing the
+performance of queries involving self-referential tables and hierarchical graph
+data.
