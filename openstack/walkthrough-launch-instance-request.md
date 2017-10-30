@@ -18,8 +18,8 @@ affect the described processes.
 
 **NOTE**: I've used a default Nova configuration for this walkthrough. In
 particular, that means I'm using the filter scheduler (not the caching
-scheduler), no custom out of tree scheduler filters, and the libvirt/KVM
-hypervisor driver.
+scheduler), the libvirt/KVM hypervisor driver, and no custom out of tree
+scheduler filters.
 
 1. [User sends boot request](#user-sends-boot-request-to-openstack-compute-api)
     1. [The flavor](#the-flavor)
@@ -167,7 +167,7 @@ destination `nova-compute` service that will launch each of the instances in
 the request.
 
 **Note**: We keep saying "each of the instances in the request". This is
-Because the OpenStack Compute API's `POST /servers` call allows the user to
+because the OpenStack Compute API's `POST /servers` call allows the user to
 specify a `min_count` value in the request. This `min_count` value is the
 number of instances (having the same flavor and image) that Nova will attempt
 to spawn for the user. Behind the scenes, when Nova sees a `min_count` value
@@ -179,9 +179,9 @@ greater than 1, it creates multiple build requests, up to the value of
 Once the `nova-scheduler` server receives a call to its `select_destinations()`
 RPC method, one of the first things it does is [ask the `placement-api` service for a set of "allocation candidates"](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/manager.py#L124).
 
-The `placement-api` service is an HTTP server that exposes information about
+The [`placement-api`](https://docs.openstack.org/nova/latest/user/placement.html) service is an HTTP server that exposes information about
 the things that provide resources to consumers of those resources. This HTTP
-server was introduced in the Mitaka OpenStack release and over the last three
+server was introduced in the Newton OpenStack release and over the last three
 releases has slowly been taking a more significant role in tracking resources
 in an OpenStack deployment.
 
@@ -194,7 +194,7 @@ As mentioned above, `nova-scheduler` asks the Placement API for something
 called "allocation candidates". Let's examine what this call actually looks
 like.
 
-The `GET /allocation_candidates` HTTP request is called with a set of query
+The [`GET /allocation_candidates`](https://developer.openstack.org/api-ref/placement/#list-allocation-candidates) HTTP request is called with a set of query
 string parameters detailing the amounts of different resources that the
 instance requires. `nova-scheduler` examines the flavor the user asked for and
 constructs a query string with a `resources=` parameter that looks something
@@ -211,16 +211,108 @@ The Placement API sends back to `nova-scheduler` an HTTP response that contains
 two primary elements: a list of "allocation requests" and a dict of information
 about the providers involved in those allocation requests.
 
+To make the following easier to grok, let us assume that we have a deployment
+of three compute nodes, each of which has 24 CPU cores, 192GB of RAM and 1TB of
+disk space for use by ephemeral disk images.
+
 Let's take a look at what a possible HTTP response from the Placement API might
 look like:
 
 ```
 {
-  "allocation_requests": []
-
+  "allocation_requests": [
+    {
+      "allocations": [
+        {
+          "resource_provider": {
+            "uuid": "30742363-f65e-4012-a60a-43e0bec38f0e"
+          },
+          "resources": {
+            "VCPU: 1,
+            "MEMORY_MB": 2048,
+            "DISK_GB": 100
+          }
+        }
+      ]
+    },
+    {
+      "allocations": [
+        {
+          "resource_provider": {
+            "uuid": "a4eb85f2-c903-4cc7-b7ff-5d423fc3523d"
+          },
+          "resources": {
+            "VCPU: 1,
+            "MEMORY_MB": 2048,
+            "DISK_GB": 100
+          }
+        }
+      ]
+    },
+    {
+      "allocations": [
+        {
+          "resource_provider": {
+            "uuid": "d1cfddcc-f2f8-4da4-bf9a-1d1f2ace7a94"
+          },
+          "resources": {
+            "VCPU: 1,
+            "MEMORY_MB": 2048,
+            "DISK_GB": 100
+          }
+        }
+      ]
+    }
   ],
   "provider_summaries": {
-
+    "30742363-f65e-4012-a60a-43e0bec38f0e": {
+      "resources": {
+        "DISK_GB": {
+          "capacity": 1000,
+          "used": 100
+        },
+        "MEMORY_MB": {
+          "capacity": 294912,
+          "used": 2560
+        },
+        "VCPU": {
+          "capacity": 24,
+          "used": 40
+        }
+      }
+    },
+    "a4eb85f2-c903-4cc7-b7ff-5d423fc3523d": {
+      "resources": {
+        "DISK_GB": {
+          "capacity": 1000,
+          "used": 0
+        },
+        "MEMORY_MB": {
+          "capacity": 294912,
+          "used": 65536
+        },
+        "VCPU": {
+          "capacity": 384,
+          "used": 16
+        }
+      }
+    },
+    "d1cfddcc-f2f8-4da4-bf9a-1d1f2ace7a94": {
+      "resources": {
+        "DISK_GB": {
+          "capacity": 1000,
+          "used": 0
+        },
+        "MEMORY_MB": {
+          "capacity": 294912,
+          "used": 2560
+        },
+        "VCPU": {
+          "capacity": 384,
+          "used": 0
+        }
+      }
+    }
   }
 }
 ```
