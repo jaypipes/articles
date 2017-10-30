@@ -10,13 +10,18 @@ allow me to introduce some of the fundamental components that are written about
 in other articles.
 
 The boot request described here is deliberately simple. We want to start with
-the basics and then iteratively add more complex concepts in later sections.
+the basics and then iteratively add more complex concepts in later articles.
 
-The OpenStack Pike release is used for this walkthrough. Where possible, we've
-noted differences between earlier versions of OpenStack that affect the
-described processes.
+**NOTE**: The OpenStack Pike release is used for this walkthrough. Where
+possible, we've noted differences between earlier versions of OpenStack that
+affect the described processes.
 
-1. [The boot request](#the-boot-request-from-the-user)
+**NOTE**: I've used a default Nova configuration for this walkthrough. In
+particular, that means I'm using the filter scheduler (not the caching
+scheduler), no custom out of tree scheduler filters, and the libvirt/KVM
+hypervisor driver.
+
+1. [User sends boot request](#user-sends-boot-request-to-openstack-compute-api)
     1. [The flavor](#the-flavor)
     1. [The image](#the-image)
 1. [API server receives boot request](#openstack-compute-api-server-receives-boot-request)
@@ -24,8 +29,13 @@ described processes.
     1. [Construct build request](#construct-build-request)
     1. [Send build request to conductor](#send-build-request-to-conductor)
 1. [Super conductor starts coordinating](#super-conductor-coordinates-placement-and-target-cell-calls)
+    1. [Find a destination host (schedule the instance)](#call-scheduler-select-destinations)
+        1. [Ask Placement for possible hosts](#scheduler-asks-placement-for-possible-destination-hosts)
+        1. [Choose a destination host](#scheduler-chooses-destination-host)
+        1. [Claim resources on destination host](#scheduler-claims-resources-on-destination-host)
+    1. [Send build instructions to destination host](#send-build-instructions-to-selected-host-in-target-cell)
 
-## The boot request from the user
+## User sends boot request to OpenStack Compute API
 
 Our user, let's call her Alice, wants to launch a virtual machine that will
 host her simple single-server web application.
@@ -39,6 +49,12 @@ Regardless of which tool Alice uses to launch her instance, that tool
 will inevitably end up making an HTTP request to the [`POST
 /servers`](https://developer.openstack.org/api-ref/compute/#create-server)
 OpenStack Compute HTTP API.
+
+For completeness, it's worth mentioning that before the client actually
+communicated with the OpenStack Compute API, the client first must communicate
+with the OpenStack Identity API (Keystone) in order to get an access token.
+This access token is then supplied in the HTTP headers by the client in its
+request to the OpenStack Compute API.
 
 This HTTP request to the `POST /servers` API takes a payload of data that
 specifies a number of launch configuration parameters. Let's take a look at a
@@ -82,9 +98,10 @@ images, this data is called "metadata" instead.
 
 The HTTP `POST /servers` request that describes Alice's request to boot her
 server is sent to the OpenStack Compute API server by the client that Alice
-uses. This server is called `nova-api` and handles all incoming user requests.
+uses. This server is called `nova-api` and it handles all incoming user
+requests.
 
-For most "action requests" like `POST /servers`, the `nova-api` server
+For many "action requests" like `POST /servers`, the `nova-api` server
 predominantly is responsible for doing some basic HTTP request payload
 validation, asynchronously sending off one or more requests to other Nova
 services, and finally returning an `HTTP 202` response to the user.
@@ -144,6 +161,72 @@ The first step in the `nova-conductor`'s coordination process is to ask the
 handle the new instance. The super conductor calls the `nova-scheduler`'s
 [`select_destinations()`](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L625) RPC method to do this.
 
-#### Scheduler asks Placement for possible resource providers
+The `select_destinations()` `nova-scheduler` RPC method [returns](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/driver.py#L64) a list of dicts
+to the super conductor. Each dict in this list contains information about the
+destination `nova-compute` service that will launch each of the instances in
+the request.
 
-### Send build instruction to selected host in cell
+**Note**: We keep saying "each of the instances in the request". This is
+Because the OpenStack Compute API's `POST /servers` call allows the user to
+specify a `min_count` value in the request. This `min_count` value is the
+number of instances (having the same flavor and image) that Nova will attempt
+to spawn for the user. Behind the scenes, when Nova sees a `min_count` value
+greater than 1, it creates multiple build requests, up to the value of
+`min_count`.
+
+#### Scheduler asks Placement for possible destination hosts
+
+Once the `nova-scheduler` server receives a call to its `select_destinations()`
+RPC method, one of the first things it does is [ask the `placement-api` service for a set of "allocation candidates"](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/manager.py#L124).
+
+The `placement-api` service is an HTTP server that exposes information about
+the things that provide resources to consumers of those resources. This HTTP
+server was introduced in the Mitaka OpenStack release and over the last three
+releases has slowly been taking a more significant role in tracking resources
+in an OpenStack deployment.
+
+A thorough discussion of how the Placement API models resource information is
+out of scope for this particular article. Instead, we'll describe the concepts
+involved in the specific requests made by the `nova-scheduler` to the Placement
+API.
+
+As mentioned above, `nova-scheduler` asks the Placement API for something
+called "allocation candidates". Let's examine what this call actually looks
+like.
+
+The `GET /allocation_candidates` HTTP request is called with a set of query
+string parameters detailing the amounts of different resources that the
+instance requires. `nova-scheduler` examines the flavor the user asked for and
+constructs a query string with a `resources=` parameter that looks something
+like this:
+
+```
+GET /allocation_candidates?resources=VCPU:1,MEMORY_MB:2048,DISK_GB:100
+```
+
+The above would represent a request for a flavor that had 1 vCPU, 2 GB of RAM
+and 100 GB of ephemeral disk storage.
+
+The Placement API sends back to `nova-scheduler` an HTTP response that contains
+two primary elements: a list of "allocation requests" and a dict of information
+about the providers involved in those allocation requests.
+
+Let's take a look at what a possible HTTP response from the Placement API might
+look like:
+
+```
+{
+  "allocation_requests": []
+
+  ],
+  "provider_summaries": {
+
+  }
+}
+```
+
+#### Scheduler chooses a destination host
+
+#### Scheduler claims resources on destination host
+
+### Send build instructions to selected host in target cell
