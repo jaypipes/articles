@@ -29,6 +29,11 @@ hypervisor driver.
     1. [Construct build request](#construct-build-request)
     1. [Send build request to conductor](#send-build-request-to-conductor)
 1. [Super conductor starts coordinating](#super-conductor-coordinates-placement-and-target-cell-calls)
+    1. [Find a destination host (schedule the instance)](#call-scheduler-select-destinations)
+        1. [Ask Placement for possible hosts](#scheduler-asks-placement-for-possible-destination-hosts)
+        1. [Choose a destination host](#scheduler-chooses-destination-host)
+        1. [Claim resources on destination host](#scheduler-claims-resources-on-destination-host)
+    1. [Send build instructions to destination host](#send-build-instructions-to-selected-host-in-target-cell)
 
 ## User sends boot request to OpenStack Compute API
 
@@ -169,7 +174,7 @@ to spawn for the user. Behind the scenes, when Nova sees a `min_count` value
 greater than 1, it creates multiple build requests, up to the value of
 `min_count`.
 
-#### Scheduler asks Placement for possible resource providers
+#### Scheduler asks Placement for possible destination hosts
 
 Once the `nova-scheduler` server receives a call to its `select_destinations()`
 RPC method, one of the first things it does is [ask the `placement-api` service for a set of "allocation candidates"](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/manager.py#L124).
@@ -220,4 +225,8 @@ look like:
 }
 ```
 
-### Send build instruction to selected host in cell
+#### Scheduler chooses a destination host
+
+#### Scheduler claims resources on destination host
+
+### Send build instructions to selected host in target cell
