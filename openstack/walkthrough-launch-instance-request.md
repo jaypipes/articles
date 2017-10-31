@@ -317,6 +317,17 @@ look like:
 }
 ```
 
+The two components of the HTTP response are used by the scheduler to do two things:
+
+1. To reduce the number of compute nodes that the scheduler processes to
+   determine a destination for the instance (the "provider_summaries" component
+   of the response is used for this)
+1. To claim resources against the selected destination host (the
+   "allocation_requests" component of the response is used for this)
+
+Let's look in detail of how the scheduler uses the above information in these
+next steps.
+
 #### Scheduler chooses a destination host
 
 #### Scheduler claims resources on destination host
