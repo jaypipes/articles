@@ -330,6 +330,36 @@ next steps.
 
 #### Scheduler chooses a destination host
 
+As noted above, `nova-scheduler` uses the "provider_summaries" part of the HTTP
+response from `GET /allocation_candidates` to reduce the number of compute
+nodes that the scheduler processes to determine a destination for each instance
+in the request.
+
+It currently (as of the Pike release) does this by simply [grabbing the keys
+from the `provider_summaries` dict](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/filter_scheduler.py#L334-L338) in the HTTP response and passing those UUIDs
+in its own call to [get records from the `compute_nodes` tables](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/host_manager.py#L647-L649) that exist in
+each cell database.
+
+After these calls to the cell databases, the scheduler will have a set of
+[`nova.objects.ComputeNode`](https://github.com/openstack/nova/blob/stable/pike/nova/objects/compute_node.py#L33) objects that represent the compute hosts which have
+the capacity to satisfy the request for the resources described by the flavor
+being requested. `nova-scheduler` then translates these `ComputeNode` objects
+into something called a [`HostState`](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/host_manager.py#L103) object that is an internal (to the
+scheduler) structure that is used to represent, well, the compute host's
+resource state.
+
+At this point, `nova-scheduler` passes these `HostState` objects to its
+collection of filters and weighers. The filters further winnow the number of
+possible destination hosts, looking at complex predicates involving server
+groups, NUMA topology requests, PCI passthrough requests, and CPU capabilities
+requests. The weighers are responsible for sorting the filtered list of
+destination hosts.
+
+Once the weighers have sorted the list of destination hosts, `nova-scheduler`
+simply picks the first destination host in that sorted list as the selected
+host for the instance. The next step is to claim the requested resources
+against this selected destination host.
+
 #### Scheduler claims resources on destination host
 
 ### Send build instructions to selected host in target cell
