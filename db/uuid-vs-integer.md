@@ -153,6 +153,8 @@ large hierarchical organization's employee directory.
 The brick-and-mortar storage application is all about recording information for
 an imaginary home-goods store: orders, customer, suppliers, products, etc.
 
+![brick-and-mortar store E-R diagram](images/brick-and-mortar-e-r.png "Entity-relationship diagram for brick-and-mortar store application")
+
 ### Employee directory
 
 The employee directory application models a large organization's need for
