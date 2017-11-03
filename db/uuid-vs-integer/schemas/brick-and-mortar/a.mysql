@@ -1,6 +1,6 @@
-DROP SCHEMA IF EXISTS schema_a;
+DROP SCHEMA IF EXISTS brick_mortar_a;
 
-CREATE SCHEMA schema_a;
+CREATE SCHEMA brick_mortar_a;
 
 CREATE TABLE suppliers (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
