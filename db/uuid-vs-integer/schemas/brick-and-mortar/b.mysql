@@ -10,15 +10,15 @@ CREATE TABLE suppliers (
     state VARCHAR(20) NOT NULL,
     postcode VARCHAR(20) NOT NULL,
     created_on DATETIME NOT NULL,
-    updated_on DATETIME NULL,
+    updated_on DATETIME NULL
 );
 
 CREATE TABLE products (
     uuid VARCHAR(36) NOT NULL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
-    description TEXT NULL
+    description TEXT NULL,
     created_on DATETIME NOT NULL,
-    updated_on DATETIME NULL,
+    updated_on DATETIME NULL
 ;
 
 CREATE TABLE product_price_history (
@@ -45,7 +45,7 @@ CREATE TABLE customers (
     city VARCHAR(50) NOT NULL,
     postcode VARCHAR(20) NOT NULL,
     created_on DATETIME NOT NULL,
-    updated_on DATETIME NULL,
+    updated_on DATETIME NULL
 );
 
 CREATE TABLE orders (
