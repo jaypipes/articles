@@ -19,7 +19,7 @@ CREATE TABLE products (
     description TEXT NULL,
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL
-;
+);
 
 CREATE TABLE product_price_history (
     product_id INT NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE product_price_history (
     ending_on DATETIME NOT NULL,
     price DECIMAL(10,2) NOT NULL,
     PRIMARY KEY (product_id, starting_on, ending_on)
-)
+);
 
 CREATE TABLE inventories (
     product_id INT NOT NULL,
