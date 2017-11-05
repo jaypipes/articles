@@ -1,0 +1,31 @@
+DROP SCHEMA IF EXISTS employee_directory_b;
+
+CREATE SCHEMA employee_directory_b;
+
+CREATE TABLE employee (
+    uuid VARCHAR(36) NOT NULL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    address TEXT NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    state VARCHAR(20) NOT NULL,
+    postcode VARCHAR(20) NOT NULL,
+    profile TEXT NULL,
+    manager_employee_uuid VARCHAR(36) NULL,
+    created_on DATETIME NOT NULL,
+    updated_on DATETIME NULL,
+    INDEX ix_manager_employee_uuid (manager_employee_uuid)
+);
+
+CREATE TABLE teams (
+    uuid VARCHAR(36) NOT NULL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    created_on DATETIME NOT NULL,
+    updated_on DATETIME NULL
+);
+
+CREATE TABLE employee_teams (
+    employee_uuid VARCHAR(36) NOT NULL,
+    team_uuid VARCHAR(36) NOT NULL,
+    PRIMARY KEY (employee_uuid, team_uuid),
+    INDEX ix_team_uuid (team_uuid)
+);
