@@ -162,3 +162,5 @@ employees to be able to find information about employees and the structure of
 the organization. This schema and application will be used in comparing the
 performance of queries involving self-referential tables and hierarchical graph
 data.
+
+![employee directory E-R diagram](uuid-vs-integer/images/employee-directory-e-r.png "Entity-relationship diagram for employee directory application")
