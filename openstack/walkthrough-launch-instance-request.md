@@ -254,11 +254,21 @@ disk space for use by ephemeral disk images.
 Let's take a look at what a possible HTTP response from the Placement API might
 look like.
 
+##### Allocation requests 
+
 The first section of the HTTP response is for the allocation requests. These
 are JSON objects that are meant to be sent to the Placement API to **_claim
-resources_** for the instance against one or more compute nodes.  There is one
+resources_** for the instance against one or more compute nodes. There is one
 allocation request object returned for each possible destination compute host
 that can house the to-be-launched instance.
+
+The **_resource_provider_** element of the allocation request is a JSON object
+containing the UUID of the compute node that will have resources consumed from
+it *if the allocation request is used to claim resources against that compute
+node*. The **_resources_** element of the allocation request is a JSON object
+containing each of the *requested resource amounts* that would be consumed by
+the new instance. These amounts will match the flavor's set of requested
+resources.
 
 In our scenario, the allocation requests might look like this:
 
@@ -308,6 +318,15 @@ In our scenario, the allocation requests might look like this:
     }
   ],
 ```
+
+In the example output above, you see three separate allocation request objects.
+Each allocation request object would consume resources for the new instance
+from each compute node in the example deployment. When `nova-scheduler` picks a
+destination compute host for Alice's instance, it will attempt to *claim*
+resources against that compute host. It will use one of the allocation requests
+to perform that claim (more below).
+
+##### Provider summaries
 
 The other part of the HTTP response to `GET /allocation_candidates` is the
 **_provider_summaries_** object. This is a map of UUID to summary information
