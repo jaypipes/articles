@@ -25,7 +25,14 @@ At a super-high level, a successful boot request to Nova looks like this:
 
 ![Bird's eye view of successful launch request](images/launch-request-birdseye.png "Bird's eye view of a successful launch request")
 
-of course, the devil is in the details, and this article is all about the
+The user sends the boot request to the OpenStack Compute API, which lives at a
+logical "top-level services" layer. A set of top-level services process the
+request, determine which compute host will house the new instance, and routes
+the request to the appropriate cell. Cells are internal (to Nova) groups of
+compute hosts. Once the target compute host receives the build request, it
+spawns the instance on its hypervisor.
+
+Of course, the devil is in the details, and this article is all about the
 details. We'll be covering each of the following steps thoroughly in different
 sections of the article, with lots of links to the actual code in Nova that
 accomplishes the particular step.
@@ -65,7 +72,7 @@ with the OpenStack Identity API (Keystone) in order to get an access token.
 This access token is then supplied in the HTTP headers by the client in its
 request to the OpenStack Compute API.
 
-This HTTP request to the `POST /servers` API takes a payload of data that
+This HTTP request to the [`POST /servers`](https://developer.openstack.org/api-ref/compute/#create-server) API takes a payload of data that
 specifies a number of launch configuration parameters. Let's take a look at a
 couple of the important ones.
 
@@ -102,6 +109,11 @@ indicate the required attributes of the target host for machines launched using
 this image as its root/boot disk. Confusingly, while this set of key/value
 pairs is identical in concept and function to the flavor "extra\_specs", for
 images, this data is called "metadata" instead.
+
+Wondering what image metadata keys and expected values are possible? The most
+reliable list of these things unfortunately is the source code itself, which
+you can find
+[here](https://github.com/openstack/nova/blob/stable/pike/nova/objects/image_meta.py#L225-L460).
 
 ## OpenStack Compute API server receives boot request
 
@@ -149,9 +161,9 @@ lots of other important information:
 Once the build requests (one per requested instance) have been created,
 `nova-api` [sends these build request objects](https://github.com/openstack/nova/blob/stable/pike/nova/compute/api.py#L1170) to the **top-level** `nova-conductor` service
 via an async/cast RPC message. This top-level `nova-conductor` service is known
-as the "super conductor". There are other `nova-conductor` services that
+as the **_super conductor_**. There are other `nova-conductor` services that
 function at a cell level. These `nova-conductor` services are called either
-"cell conductors" or "cell-local conductors".
+**_cell conductors_** or **_cell-local conductors_**.
 
 ## Super conductor coordinates placement and targeted cell calls
 
@@ -196,17 +208,17 @@ in an OpenStack deployment.
 
 A thorough discussion of how the Placement API models resource information is
 out of scope for this particular article. Instead, we'll describe the concepts
-involved in the specific requests made by the `nova-scheduler` to the Placement
+involved in the specific requests made by `nova-scheduler` to the Placement
 API.
 
 As mentioned above, `nova-scheduler` asks the Placement API for something
-called "allocation candidates". Let's examine what this call actually looks
+called **_allocation candidates_**. Let's examine what this call actually looks
 like.
 
 The [`GET /allocation_candidates`](https://developer.openstack.org/api-ref/placement/#list-allocation-candidates) HTTP request is called with a set of query
 string parameters detailing the amounts of different resources that the
-instance requires. `nova-scheduler` examines the flavor the user asked for and
-constructs a query string with a `resources=` parameter that looks something
+instance requires. `nova-scheduler` [examines the flavor](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/manager.py#L121) the user asked for and
+[constructs](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/client/report.py#L328-L335) a query string with a `resources=` parameter that looks something
 like this:
 
 ```
@@ -217,18 +229,40 @@ The above would represent a request for a flavor that had 1 vCPU, 2 GB of RAM
 and 100 GB of ephemeral disk storage.
 
 The Placement API sends back to `nova-scheduler` an HTTP response that contains
-two primary elements: a list of "allocation requests" and a dict of information
-about the providers involved in those allocation requests.
+two primary elements: a list of **_allocation requests_** and a dict of information
+about the providers involved in those allocation requests called **_provider summaries_**.
+
+```json
+{
+  "allocation_requests": [
+    <ALLOCATION_REQUEST_1>,
+    ...
+    <ALLOCATION_REQUEST_N>
+  ],
+  "provider_summaries": {
+    <COMPUTE_NODE_UUID_1>: <PROVIDER_SUMMARY_1>,
+    ...
+    <COMPUTE_NODE_UUID_N>: <PROVIDER_SUMMARY_N>,
+  }
+}
+```
 
 To make the following easier to grok, let us assume that we have a deployment
 of three compute nodes, each of which has 24 CPU cores, 192GB of RAM and 1TB of
 disk space for use by ephemeral disk images.
 
 Let's take a look at what a possible HTTP response from the Placement API might
-look like:
+look like.
 
-```
-{
+The first section of the HTTP response is for the allocation requests. These
+are JSON objects that are meant to be sent to the Placement API to **_claim
+resources_** for the instance against one or more compute nodes.  There is one
+allocation request object returned for each possible destination compute host
+that can house the to-be-launched instance.
+
+In our scenario, the allocation requests might look like this:
+
+```json
   "allocation_requests": [
     {
       "allocations": [
@@ -273,6 +307,14 @@ look like:
       ]
     }
   ],
+```
+
+The other part of the HTTP response to `GET /allocation_candidates` is the
+**_provider_summaries_** object. This is a map of UUID to summary information
+about the compute nodes involved in any of the allocation requests. Here is
+what this part of the response might look like for our scenario:
+
+```json
   "provider_summaries": {
     "30742363-f65e-4012-a60a-43e0bec38f0e": {
       "resources": {
@@ -323,10 +365,10 @@ look like:
       }
     }
   }
-}
 ```
 
-The two components of the HTTP response are used by the scheduler to do two things:
+These two components of the HTTP response are used by the scheduler to do two
+things:
 
 1. To reduce the number of compute nodes that the scheduler processes to
    determine a destination for the instance (the "provider_summaries" component
