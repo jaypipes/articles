@@ -232,7 +232,7 @@ The Placement API sends back to `nova-scheduler` an HTTP response that contains
 two primary elements: a list of **_allocation requests_** and a dict of information
 about the providers involved in those allocation requests called **_provider summaries_**.
 
-```json
+```
 {
   "allocation_requests": [
     <ALLOCATION_REQUEST_1>,
@@ -262,7 +262,7 @@ that can house the to-be-launched instance.
 
 In our scenario, the allocation requests might look like this:
 
-```json
+```
   "allocation_requests": [
     {
       "allocations": [
@@ -314,7 +314,7 @@ The other part of the HTTP response to `GET /allocation_candidates` is the
 about the compute nodes involved in any of the allocation requests. Here is
 what this part of the response might look like for our scenario:
 
-```json
+```
   "provider_summaries": {
     "30742363-f65e-4012-a60a-43e0bec38f0e": {
       "resources": {
