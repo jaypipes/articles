@@ -6,7 +6,7 @@ many components involved in the launch request and the structure of the
 payloads sent and received in the communication between these components.
 
 Talking about this boot request should provide some shared terminology and
-allow me to introduce some of the fundamental components that are written about
+allow us to introduce some of the fundamental components that are written about
 in other articles.
 
 The boot request described here is deliberately simple. We want to start with
@@ -16,10 +16,19 @@ the basics and then iteratively add more complex concepts in later articles.
 possible, we've noted differences between earlier versions of OpenStack that
 affect the described processes.
 
-**NOTE**: I've used a default Nova configuration for this walkthrough. In
-particular, that means I'm using the filter scheduler (not the caching
+**NOTE**: We've used a default Nova configuration for this walkthrough. In
+particular, that means we're using the filter scheduler (not the caching
 scheduler), the libvirt/KVM hypervisor driver, and no custom out of tree
 scheduler filters.
+
+At a super-high level, a successful boot request to Nova looks like this:
+
+![Bird's eye view of successful launch request](images/launch-request-birdseye.png "Bird's eye view of a successful launch request")
+
+of course, the devil is in the details, and this article is all about the
+details. We'll be covering each of the following steps thoroughly in different
+sections of the article, with lots of links to the actual code in Nova that
+accomplishes the particular step.
 
 1. [User sends boot request](#user-sends-boot-request-to-openstack-compute-api)
     1. [The flavor](#the-flavor)
