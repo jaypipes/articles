@@ -418,11 +418,11 @@ into something called a [`HostState`](https://github.com/openstack/nova/blob/sta
 scheduler) structure that is used to represent, well, the compute host's
 resource state.
 
-At this point, `nova-scheduler` passes these `HostState` objects to its
+At this point, `nova-scheduler` [passes](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/filter_scheduler.py#L300-L301) these `HostState` objects to its
 collection of filters and weighers. The filters further winnow the number of
 possible destination hosts, looking at complex predicates involving server
 groups, NUMA topology requests, PCI passthrough requests, and CPU capabilities
-requests. The weighers are responsible for sorting the filtered list of
+requests. The weighers are responsible for [sorting the filtered list](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/filter_scheduler.py#L308-L309) of
 destination hosts.
 
 Once the weighers have sorted the list of destination hosts, `nova-scheduler`
@@ -431,5 +431,47 @@ host for the instance. The next step is to claim the requested resources
 against this selected destination host.
 
 #### Scheduler claims resources on destination host
+
+Now that the scheduler has a list of sorted compute hosts that have all the
+requested resources and meet all the required constraints, the scheduler must
+attempt to **_claim those resources_** on the selected destination host.
+
+"Claiming resources" means the process of allocating some amount of resources
+being provided by a compute node to the consumer of those resources: the
+newly-launched instance. From a technical perspective, the process of claiming
+resources for an instance involves the writing of one or more records in the
+Placement service's database in a transactional manner.
+
+The Pike release of OpenStack brought a major change to the boot process.
+Before Ocata, we claim resources right before the instance is spawned on a
+compute host, and we perform the claim operation **_on the compute host
+itself_**. This approach was problematic in a number of ways, but one of the
+biggest problems was that due to the long period of time in between selection
+of a destination host (by the scheduler) and the actual resource claim on the
+destination host, there was a greater chance of two scheduler processes both
+picking the same destination host and one of them consuming the last bit of
+resources on a compute host. This would trigger something called a "retry", and
+these retries are costly operations that go all the way back to the scheduler
+to find a new destination host and back down into a cell to the new destination
+host where another retry could be triggered.
+
+In Pike, we modified the boot process to eliminate the major cause for retry
+operations: resource contention and the stampeding herd effects of a delayed
+simulataneous resource claim. We now [claim resources against the target
+compute host](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/filter_scheduler.py#L215-L216) **in `nova-scheduler`**.
+
+If multiple scheduler processes end up trying to claim resources on the same
+compute host -- and one of them ends up exhausting the compute host's resources
+-- `nova-scheduler` now immediately picks a new destination host from its
+[sorted list of matching compute hosts](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/filter_scheduler.py#L207) and attempts to claim resources against
+that next alternate host.
+
+All this means that by the time the super conductor gets a return from
+`nova-scheduler`'s select_destinations() method, *resources have already been
+allocated from the destination host to the new instance*. No more resource
+contention happening on the compute hosts, which means no more reason for the
+costly retry operation that must call the scheduler again. In fact, this means
+that the compute host in the cell has no reason to "upcall" to the top-level
+services tier any more.
 
 ### Send build instructions to selected host in target cell
