@@ -575,3 +575,25 @@ to the cell database. There are actually numerous places in the launch process
 where we save the instance's state to the cell database. But the final instance
 state save is the one that sets the instance state to 'active' and indicates to
 Alice that her server instance is ready for use.
+
+## A dance of the marionnettes
+
+It probably feels like a lifetime since Alice initially sent her request to the
+OpenStack Compute API to launch her instance. But in a real-world OpenStack
+deployment, all of the above steps from the time Alice clicked a button in
+Horizon all the way to the final instance state being saved to cell database
+probably took only around 6 seconds. That's a lot of code being executed by a
+lot of distributed serviAces in a short period of time.
+
+![dance of the marionettes](images/marionettes.jpg "dance of the marionnettes")
+
+You can think of it as a kind of dance of the marionnettes. This dance wouldn't
+be possible without the work of dozens of highly skilled software engineers
+with a broad and diverse knowledge and skill set. This skill set ranges from
+low-level Linux kernel and hypervisor knowledge, distributed systems
+architecture, DB schema and message queue topologies to storage internals,
+upgrade and versioning knowledge and operating system distribution expertise.
+The OpenStack community is lucky to have such a skilled set of engineers
+working to improve the OpenStack components each and every day.
+
+Thank you, OpenStack contributors.
