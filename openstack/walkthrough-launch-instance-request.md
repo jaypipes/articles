@@ -439,8 +439,9 @@ attempt to **_claim those resources_** on the selected destination host.
 "Claiming resources" means the process of allocating some amount of resources
 being provided by a compute node to the consumer of those resources: the
 newly-launched instance. From a technical perspective, the process of claiming
-resources for an instance involves the writing of one or more records in the
-Placement service's database in a transactional manner.
+resources for an instance involves the [writing of one or more allocation
+records](https://github.com/openstack/nova/blob/stable/pike/nova/objects/resource_provider.py#L1796-L1857)
+in the Placement service's database in a transactional manner.
 
 The Pike release of OpenStack brought a major change to the boot process.
 Before Ocata, we claim resources right before the instance is spawned on a
@@ -475,3 +476,15 @@ that the compute host in the cell has no reason to "upcall" to the top-level
 services tier any more.
 
 ### Send build instructions to selected host in target cell
+
+OK, so now that the scheduler has returned to the super conductor a destination
+host for Alice's new instance, the super conductor is responsible for sending
+build instructions to that destination host. Before doing this routing,
+however, the super conductor [ensures](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L597-L599) that the top-level services tier has a
+record of where the instance is being sent. Having this record is important,
+obviously, for routing actionable requests from Alice in the future to do
+things like reboot or terminate the server instance.
+
+Once that instance to cell/host mapping is written, the super conductor [sends](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L611-L620)
+an RPC message to spawn the instance directly to the compute host that was
+selected by the scheduler.
