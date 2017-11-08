@@ -50,6 +50,11 @@ accomplishes the particular step.
         1. [Choose a destination host](#scheduler-chooses-destination-host)
         1. [Claim resources on destination host](#scheduler-claims-resources-on-destination-host)
     1. [Send build instructions to destination host](#send-build-instructions-to-selected-host-in-target-cell)
+1. [Destination compute builds instance](#destination-compute-builds-instance)
+    1. [Create network plug points](#create-network-plug-points)
+    1. [Prepare block devices](#prepare-block-devices)
+    1. [Hypervisor spawns instance](#hypervisor-spawns-instance)
+    1. [Save instance state to cell DB](#save-instance-state-to-cell-db)
 
 ## User sends boot request to OpenStack Compute API
 
@@ -254,7 +259,7 @@ disk space for use by ephemeral disk images.
 Let's take a look at what a possible HTTP response from the Placement API might
 look like.
 
-##### Allocation requests 
+##### Allocation requests
 
 The first section of the HTTP response is for the allocation requests. These
 are JSON objects that are meant to be sent to the Placement API to **_claim
@@ -477,10 +482,10 @@ services tier any more.
 
 ### Send build instructions to selected host in target cell
 
-OK, so now that the scheduler has returned to the super conductor a destination
-host for Alice's new instance, the super conductor is responsible for sending
-build instructions to that destination host. Before doing this routing,
-however, the super conductor [ensures](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L597-L599) that the top-level services tier has a
+Now that the scheduler has returned to the super conductor a destination host
+for Alice's new instance, the super conductor is responsible for sending build
+instructions to that destination host. Before doing this routing, however,
+the super conductor [ensures](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L597-L599) that the top-level services tier has a
 record of where the instance is being sent. Having this record is important,
 obviously, for routing actionable requests from Alice in the future to do
 things like reboot or terminate the server instance.
@@ -488,3 +493,30 @@ things like reboot or terminate the server instance.
 Once that instance to cell/host mapping is written, the super conductor [sends](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L611-L620)
 an RPC message to spawn the instance directly to the compute host that was
 selected by the scheduler.
+
+## Destination compute builds instance
+
+The build instructions sent from the super conductor [arrive](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1741)
+over RPC at the compute host that was selected by the scheduler for Alice's new
+instance. Because the steps to actually set up and boot the virtual machine can
+take a long time (seconds), the first thing the compute host manager does is
+[spawn a greenthread to perform the actual build steps](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1792-L1796).
+This ensures that the primary thread that handles RPC communication doesn't
+block waiting for any of the steps being taken to launch the new instance; it
+can remain responsive to other callers.
+
+### Create network plug points
+
+TODO
+
+### Prepare block devices
+
+TODO
+
+### Hypervisor spawns instance
+
+TODO
+
+### Save instance state to cell DB
+
+TODO
