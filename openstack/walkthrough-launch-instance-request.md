@@ -509,7 +509,7 @@ can remain responsive to other callers.
 
 ### Create network plug points
 
-One of the first steps the manager on the compute host performs is ensuring
+One of the first steps the manager on the compute host performs is ensure
 that network plug points are established for the new instance. Because this
 step involves coordination with the OpenStack Networking API (Neutron), we use
 an async callback strategy to allow other build steps (namely, block device
@@ -523,7 +523,31 @@ and [DHCP information](https://github.com/openstack/nova/blob/stable/pike/nova/c
 
 ### Prepare block devices
 
-TODO
+While network information is being populated asynchronously, `nova-compute`
+[prepares the block devices](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L2165-L2166)
+for an instance. This step involves [communicating](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1596-L1598) with the OpenStack Volume API
+(Cinder) to [attach block devices](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L596) to the new instance.
+
+The attach process involves asking the OpenStack Volume API to [get information](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L364)
+about a particular volume, get what's called a [connector for the volume](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L371), and
+then [initialize a connection](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L372-L374) to the volume. Once the connection is initialized,
+the hypervisor's [`attach_volume()`](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L386-L389) method is called. Depending on the type of
+connection (iSCSI, NFS, RBD, etc), the hypervisor does different things during
+this attach process.
+
+**Note**: The block device code *in Nova* (note, not in Cinder, but in Nova) is
+some of the hairiest and most maddeningly obscure code. There are multiple
+layers and classes of code with similar names.  For example, there is a
+[`nova.virt.block_device.DriverBlockDevice`](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L80) class that represents the *virt
+driver-agnostic* interface to the block devices. There is a
+[`nova.block_device.BlockDeviceDict`](https://github.com/openstack/nova/blob/stable/pike/nova/block_device.py#L69) class that represents a "block device
+mapping". There is a [`nova.objects.block_device.BlockDeviceMapping`](https://github.com/openstack/nova/blob/stable/pike/nova/objects/block_device.py#L43) class that
+also represents a block device mapping that can be serialized and sent across
+the RPC wire. There is a [`nova.virt.libvirt.blockinfo`](https://github.com/openstack/nova/blob/stable/pike/nova/virt/libvirt/blockinfo.py) module that tries
+(unsuccessfully) to clarify the differences between "legacy" block device
+mappings and "new" block device mappings, but only for libvirt. And on and on.
+It's just terribad. It's not just that there be dragons in this part of the
+codebase. It's that there be dragons with a bad case of diarrhea.
 
 ### Hypervisor spawns instance
 
