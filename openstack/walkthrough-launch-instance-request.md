@@ -583,7 +583,7 @@ OpenStack Compute API to launch her instance. But in a real-world OpenStack
 deployment, all of the above steps from the time Alice clicked a button in
 Horizon all the way to the final instance state being saved to cell database
 probably took only around 6 seconds. That's a lot of code being executed by a
-lot of distributed serviAces in a short period of time.
+lot of distributed services in a short period of time.
 
 ![dance of the marionettes](images/marionettes.jpg "dance of the marionnettes")
 
