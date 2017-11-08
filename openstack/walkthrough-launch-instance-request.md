@@ -507,7 +507,17 @@ can remain responsive to other callers.
 
 ### Create network plug points
 
-TODO
+One of the first steps the manager on the compute host performs is ensuring
+that network plug points are established for the new instance. Because this
+step involves coordination with the OpenStack Networking API (Neutron), we use
+an async callback strategy to allow other build steps (namely, block device
+setup) to occur while network and port binding details are set up.
+
+The [`_build_networks_for_instance()`](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1442) method on the compute manager is
+the primary entrypoint for where the networking information is set up. However,
+the asynchronous part of this method is actually the [`_allocate_network_async()`](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1388-L1439)
+method, which must run after the hypervisor has been asked to [calculate MAC addresses](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1459)
+and [DHCP information](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1460) for the new instance's virtual network interfaces.
 
 ### Prepare block devices
 
