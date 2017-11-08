@@ -505,6 +505,8 @@ This ensures that the primary thread that handles RPC communication doesn't
 block waiting for any of the steps being taken to launch the new instance; it
 can remain responsive to other callers.
 
+![compute host build steps](images/compute-host-build-instance-steps.png "nova-compute build steps")
+
 ### Create network plug points
 
 One of the first steps the manager on the compute host performs is ensuring
