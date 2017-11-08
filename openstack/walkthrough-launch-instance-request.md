@@ -497,10 +497,10 @@ selected by the scheduler.
 ## Destination compute builds instance
 
 The build instructions sent from the super conductor [arrive](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1741)
-over RPC at the compute host that was selected by the scheduler for Alice's new
-instance. Because the steps to actually set up and boot the virtual machine can
-take a long time (seconds), the first thing the compute host manager does is
-[spawn a greenthread to perform the actual build steps](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1792-L1796).
+over RPC at the compute host (`nova-compute`) that was selected by the
+scheduler for Alice's new instance. Because the steps to actually set up and
+boot the virtual machine can take a long time (seconds), the first thing the
+compute host manager does is [spawn a greenthread to perform the actual build steps](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1792-L1796).
 This ensures that the primary thread that handles RPC communication doesn't
 block waiting for any of the steps being taken to launch the new instance; it
 can remain responsive to other callers.
@@ -551,7 +551,22 @@ codebase. It's that there be dragons with a bad case of diarrhea.
 
 ### Hypervisor spawns instance
 
-TODO
+Now that `nova-compute` has information about network and block devices, has
+prepped those devices for the new instance, it's time to ask the hypervisor to
+actually boot the instance. The virt driver API method is the abstraction
+inside of `nova-compute` that allows us to rely on a variety of hypervisors
+(libvirt/KVM, Xen, Hyper-V, VMWare vCenter, etc) as well as baremetal launchers
+like Ironic to do the low-level work of actually booting a server instance.
+
+The [`spawn()`](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L2004-L2007) virt driver API method is called to actually boot the server instance.
+
+Each virt driver implements `spawn()` in a completely different way. This is to
+be expected, of course. Different hypervisors have unique ways of communicating
+with the underlying kernel technology that provides virtualization, isolation,
+and emulation functionality. It's beyong the scope of this particular article
+to discuss the intracacies of how each hypervisor works. We'll just state here
+that once `spawn()` completes successfully, the server instance is now up and
+running on the hypervisor (or baremetal hardware in the case of Ironic)
 
 ### Save instance state to cell DB
 
