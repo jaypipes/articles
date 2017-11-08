@@ -570,4 +570,8 @@ running on the hypervisor (or baremetal hardware in the case of Ironic)
 
 ### Save instance state to cell DB
 
-TODO
+The final step in the launch process is to ensure we [save the instance's state](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L2107-L2110)
+to the cell database. There are actually numerous places in the launch process
+where we save the instance's state to the cell database. But the final instance
+state save is the one that sets the instance state to 'active' and indicates to
+Alice that her server instance is ready for use.
