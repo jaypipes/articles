@@ -118,7 +118,7 @@ images, this data is called "metadata" instead.
 Wondering what image metadata keys and expected values are possible? The most
 reliable list of these things unfortunately is the source code itself, which
 you can find
-[here](https://github.com/openstack/nova/blob/8fdb1372/nova/objects/image_meta.py#L225-L460).
+[here](https://github.com/openstack/nova/blob/stable/pike/nova/objects/image_meta.py#L225-L460).
 
 ## OpenStack Compute API server receives boot request
 
@@ -145,12 +145,12 @@ successfully.
 Each HTTP resource endpoint is handled by a method on a controller class. These
 controller classes are all in the `nova/api/openstack/compute` source code
 directory. For example, the `POST /servers` HTTP call is handled by the
-[`nova.api.openstack.compute.servers.ServersController.create()`](https://github.com/openstack/nova/blob/8fdb1372/nova/api/openstack/compute/servers.py#L453) method.
+[`nova.api.openstack.compute.servers.ServersController.create()`](https://github.com/openstack/nova/blob/stable/pike/nova/api/openstack/compute/servers.py#L453) method.
 
 ### Construct "build request"
 
 Once the basic HTTP payload has been validated, `nova-api`'s next step is to
-[create the "build request"](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/api.py#L880).
+[create the "build request"](https://github.com/openstack/nova/blob/stable/pike/nova/compute/api.py#L880).
 The build request contains information from the user's boot request along with
 lots of other important information:
 
@@ -164,7 +164,7 @@ lots of other important information:
 ### Send build request to conductor
 
 Once the build requests (one per requested instance) have been created,
-`nova-api` [sends these build request objects](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/api.py#L1170) to the **top-level** `nova-conductor` service
+`nova-api` [sends these build request objects](https://github.com/openstack/nova/blob/stable/pike/nova/compute/api.py#L1170) to the **top-level** `nova-conductor` service
 via an async/cast RPC message. This top-level `nova-conductor` service is known
 as the **_super conductor_**. There are other `nova-conductor` services that
 function at a cell level. These `nova-conductor` services are called either
@@ -172,7 +172,7 @@ function at a cell level. These `nova-conductor` services are called either
 
 ## Super conductor coordinates placement and targeted cell calls
 
-Once the top-level `nova-conductor` (the super conductor) [receives the request](https://github.com/openstack/nova/blob/8fdb1372/nova/conductor/manager.py#L1018)
+Once the top-level `nova-conductor` (the super conductor) [receives the request](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L1018)
 from the `nova-api` service, the super conductor begins a process of
 determining which compute host can house the new instance and sending an
 asynchronous message to that selected target compute host to spawn the instance
@@ -185,9 +185,9 @@ on its hypervisor.
 The first step in the `nova-conductor`'s coordination process is to ask the
 `nova-scheduler` service to determine which compute host has the capacity to
 handle the new instance. The super conductor calls the `nova-scheduler`'s
-[`select_destinations()`](https://github.com/openstack/nova/blob/8fdb1372/nova/conductor/manager.py#L625) RPC method to do this.
+[`select_destinations()`](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L625) RPC method to do this.
 
-The `select_destinations()` `nova-scheduler` RPC method [returns](https://github.com/openstack/nova/blob/8fdb1372/nova/scheduler/driver.py#L64) a list of dicts
+The `select_destinations()` `nova-scheduler` RPC method [returns](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/driver.py#L64) a list of dicts
 to the super conductor. Each dict in this list contains information about the
 destination `nova-compute` service that will launch each of the instances in
 the request.
@@ -203,7 +203,7 @@ value greater than 1, it creates multiple build requests, up to the value of
 #### Scheduler asks Placement for possible destination hosts
 
 Once the `nova-scheduler` server receives a call to its `select_destinations()`
-RPC method, one of the first things it does is [ask the `placement-api` service for a set of "allocation candidates"](https://github.com/openstack/nova/blob/8fdb1372/nova/scheduler/manager.py#L124).
+RPC method, one of the first things it does is [ask the `placement-api` service for a set of "allocation candidates"](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/manager.py#L124).
 
 The [`placement-api`](https://docs.openstack.org/nova/latest/user/placement.html) service is an HTTP server that exposes information about
 the things that provide resources to consumers of those resources. This HTTP
@@ -222,8 +222,8 @@ like.
 
 The [`GET /allocation_candidates`](https://developer.openstack.org/api-ref/placement/#list-allocation-candidates) HTTP request is called with a set of query
 string parameters detailing the amounts of different resources that the
-instance requires. `nova-scheduler` [examines the flavor](https://github.com/openstack/nova/blob/8fdb1372/nova/scheduler/manager.py#L121) the user asked for and
-[constructs](https://github.com/openstack/nova/blob/8fdb1372/nova/scheduler/client/report.py#L328-L335) a query string with a `resources=` parameter that looks something
+instance requires. `nova-scheduler` [examines the flavor](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/manager.py#L121) the user asked for and
+[constructs](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/client/report.py#L328-L335) a query string with a `resources=` parameter that looks something
 like this:
 
 ```
@@ -411,23 +411,23 @@ nodes that the scheduler processes to determine a destination for each instance
 in the request.
 
 It currently (as of the Pike release) does this by simply [grabbing the keys
-from the `provider_summaries` dict](https://github.com/openstack/nova/blob/8fdb1372/nova/scheduler/filter_scheduler.py#L334-L338) in the HTTP response and passing those UUIDs
-in its own call to [get records from the `compute_nodes` tables](https://github.com/openstack/nova/blob/8fdb1372/nova/scheduler/host_manager.py#L647-L649) that exist in
+from the `provider_summaries` dict](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/filter_scheduler.py#L334-L338) in the HTTP response and passing those UUIDs
+in its own call to [get records from the `compute_nodes` tables](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/host_manager.py#L647-L649) that exist in
 each cell database.
 
 After these calls to the cell databases, the scheduler will have a set of
-[`nova.objects.ComputeNode`](https://github.com/openstack/nova/blob/8fdb1372/nova/objects/compute_node.py#L33) objects that represent the compute hosts which have
+[`nova.objects.ComputeNode`](https://github.com/openstack/nova/blob/stable/pike/nova/objects/compute_node.py#L33) objects that represent the compute hosts which have
 the capacity to satisfy the request for the resources described by the flavor
 being requested. `nova-scheduler` then translates these `ComputeNode` objects
-into something called a [`HostState`](https://github.com/openstack/nova/blob/8fdb1372/nova/scheduler/host_manager.py#L103) object that is an internal (to the
+into something called a [`HostState`](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/host_manager.py#L103) object that is an internal (to the
 scheduler) structure that is used to represent, well, the compute host's
 resource state.
 
-At this point, `nova-scheduler` [passes](https://github.com/openstack/nova/blob/8fdb1372/nova/scheduler/filter_scheduler.py#L300-L301) these `HostState` objects to its
+At this point, `nova-scheduler` [passes](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/filter_scheduler.py#L300-L301) these `HostState` objects to its
 collection of filters and weighers. The filters further winnow the number of
 possible destination hosts, looking at complex predicates involving server
 groups, NUMA topology requests, PCI passthrough requests, and CPU capabilities
-requests. The weighers are responsible for [sorting the filtered list](https://github.com/openstack/nova/blob/8fdb1372/nova/scheduler/filter_scheduler.py#L308-L309) of
+requests. The weighers are responsible for [sorting the filtered list](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/filter_scheduler.py#L308-L309) of
 destination hosts.
 
 Once the weighers have sorted the list of destination hosts, `nova-scheduler`
@@ -445,7 +445,7 @@ attempt to **_claim those resources_** on the selected destination host.
 being provided by a compute node to the consumer of those resources: the
 newly-launched instance. From a technical perspective, the process of claiming
 resources for an instance involves the [writing of one or more allocation
-records](https://github.com/openstack/nova/blob/8fdb1372/nova/objects/resource_provider.py#L1796-L1857)
+records](https://github.com/openstack/nova/blob/stable/pike/nova/objects/resource_provider.py#L1796-L1857)
 in the Placement service's database in a transactional manner.
 
 The Pike release of OpenStack brought a major change to the boot process.
@@ -464,12 +464,12 @@ host where another retry could be triggered.
 In Pike, we modified the boot process to eliminate the major cause for retry
 operations: resource contention and the stampeding herd effects of a delayed
 simulataneous resource claim. We now [claim resources against the target
-compute host](https://github.com/openstack/nova/blob/8fdb1372/nova/scheduler/filter_scheduler.py#L215-L216) **in `nova-scheduler`**.
+compute host](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/filter_scheduler.py#L215-L216) **in `nova-scheduler`**.
 
 If multiple scheduler processes end up trying to claim resources on the same
 compute host -- and one of them ends up exhausting the compute host's resources
 -- `nova-scheduler` now immediately picks a new destination host from its
-[sorted list of matching compute hosts](https://github.com/openstack/nova/blob/8fdb1372/nova/scheduler/filter_scheduler.py#L207) and attempts to claim resources against
+[sorted list of matching compute hosts](https://github.com/openstack/nova/blob/stable/pike/nova/scheduler/filter_scheduler.py#L207) and attempts to claim resources against
 that next alternate host.
 
 All this means that by the time the super conductor gets a return from
@@ -485,22 +485,22 @@ services tier any more.
 Now that the scheduler has returned to the super conductor a destination host
 for Alice's new instance, the super conductor is responsible for sending build
 instructions to that destination host. Before doing this routing, however,
-the super conductor [ensures](https://github.com/openstack/nova/blob/8fdb1372/nova/conductor/manager.py#L597-L599) that the top-level services tier has a
+the super conductor [ensures](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L597-L599) that the top-level services tier has a
 record of where the instance is being sent. Having this record is important,
 obviously, for routing actionable requests from Alice in the future to do
 things like reboot or terminate the server instance.
 
-Once that instance to cell/host mapping is written, the super conductor [sends](https://github.com/openstack/nova/blob/8fdb1372/nova/conductor/manager.py#L611-L620)
+Once that instance to cell/host mapping is written, the super conductor [sends](https://github.com/openstack/nova/blob/stable/pike/nova/conductor/manager.py#L611-L620)
 an RPC message to spawn the instance directly to the compute host that was
 selected by the scheduler.
 
 ## Destination compute builds instance
 
-The build instructions sent from the super conductor [arrive](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/manager.py#L1741)
+The build instructions sent from the super conductor [arrive](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1741)
 over RPC at the compute host (`nova-compute`) that was selected by the
 scheduler for Alice's new instance. Because the steps to actually set up and
 boot the virtual machine can take a long time (seconds), the first thing the
-compute host manager does is [spawn a greenthread to perform the actual build steps](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/manager.py#L1792-L1796).
+compute host manager does is [spawn a greenthread to perform the actual build steps](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1792-L1796).
 This ensures that the primary thread that handles RPC communication doesn't
 block waiting for any of the steps being taken to launch the new instance; it
 can remain responsive to other callers.
@@ -515,35 +515,35 @@ step involves coordination with the OpenStack Networking API (Neutron), we use
 an async callback strategy to allow other build steps (namely, block device
 setup) to occur while network and port binding details are set up.
 
-The [`_build_networks_for_instance()`](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/manager.py#L1442) method on the compute manager is
+The [`_build_networks_for_instance()`](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1442) method on the compute manager is
 the primary entrypoint for where the networking information is set up. However,
-the asynchronous part of this method is actually the [`_allocate_network_async()`](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/manager.py#L1388-L1439)
-method, which must run after the hypervisor has been asked to [calculate MAC addresses](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/manager.py#L1459)
-and [DHCP information](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/manager.py#L1460) for the new instance's virtual network interfaces.
+the asynchronous part of this method is actually the [`_allocate_network_async()`](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1388-L1439)
+method, which must run after the hypervisor has been asked to [calculate MAC addresses](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1459)
+and [DHCP information](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1460) for the new instance's virtual network interfaces.
 
 ### Prepare block devices
 
 While network information is being populated asynchronously, `nova-compute`
-[prepares the block devices](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/manager.py#L2165-L2166)
-for an instance. This step involves [communicating](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/manager.py#L1596-L1598) with the OpenStack Volume API
-(Cinder) to [attach block devices](https://github.com/openstack/nova/blob/8fdb1372/nova/virt/block_device.py#L596) to the new instance.
+[prepares the block devices](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L2165-L2166)
+for an instance. This step involves [communicating](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L1596-L1598) with the OpenStack Volume API
+(Cinder) to [attach block devices](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L596) to the new instance.
 
-The attach process involves asking the OpenStack Volume API to [get information](https://github.com/openstack/nova/blob/8fdb1372/nova/virt/block_device.py#L364)
-about a particular volume, get what's called a [connector for the volume](https://github.com/openstack/nova/blob/8fdb1372/nova/virt/block_device.py#L371), and
-then [initialize a connection](https://github.com/openstack/nova/blob/8fdb1372/nova/virt/block_device.py#L372-L374) to the volume. Once the connection is initialized,
-the hypervisor's [`attach_volume()`](https://github.com/openstack/nova/blob/8fdb1372/nova/virt/block_device.py#L386-L389) method is called. Depending on the type of
+The attach process involves asking the OpenStack Volume API to [get information](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L364)
+about a particular volume, get what's called a [connector for the volume](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L371), and
+then [initialize a connection](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L372-L374) to the volume. Once the connection is initialized,
+the hypervisor's [`attach_volume()`](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L386-L389) method is called. Depending on the type of
 connection (iSCSI, NFS, RBD, etc), the hypervisor does different things during
 this attach process.
 
 **Note**: The block device code *in Nova* (note, not in Cinder, but in Nova) is
 some of the hairiest and most maddeningly obscure code. There are multiple
 layers and classes of code with similar names.  For example, there is a
-[`nova.virt.block_device.DriverBlockDevice`](https://github.com/openstack/nova/blob/8fdb1372/nova/virt/block_device.py#L80) class that represents the *virt
+[`nova.virt.block_device.DriverBlockDevice`](https://github.com/openstack/nova/blob/stable/pike/nova/virt/block_device.py#L80) class that represents the *virt
 driver-agnostic* interface to the block devices. There is a
-[`nova.block_device.BlockDeviceDict`](https://github.com/openstack/nova/blob/8fdb1372/nova/block_device.py#L69) class that represents a "block device
-mapping". There is a [`nova.objects.block_device.BlockDeviceMapping`](https://github.com/openstack/nova/blob/8fdb1372/nova/objects/block_device.py#L43) class that
+[`nova.block_device.BlockDeviceDict`](https://github.com/openstack/nova/blob/stable/pike/nova/block_device.py#L69) class that represents a "block device
+mapping". There is a [`nova.objects.block_device.BlockDeviceMapping`](https://github.com/openstack/nova/blob/stable/pike/nova/objects/block_device.py#L43) class that
 also represents a block device mapping that can be serialized and sent across
-the RPC wire. There is a [`nova.virt.libvirt.blockinfo`](https://github.com/openstack/nova/blob/8fdb1372/nova/virt/libvirt/blockinfo.py) module that tries
+the RPC wire. There is a [`nova.virt.libvirt.blockinfo`](https://github.com/openstack/nova/blob/stable/pike/nova/virt/libvirt/blockinfo.py) module that tries
 (unsuccessfully) to clarify the differences between "legacy" block device
 mappings and "new" block device mappings, but only for libvirt. And on and on.
 It's just terribad. It's not just that there be dragons in this part of the
@@ -558,7 +558,7 @@ inside of `nova-compute` that allows us to rely on a variety of hypervisors
 (libvirt/KVM, Xen, Hyper-V, VMWare vCenter, etc) as well as baremetal launchers
 like Ironic to do the low-level work of actually booting a server instance.
 
-The [`spawn()`](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/manager.py#L2004-L2007) virt driver API method is called to actually boot the server instance.
+The [`spawn()`](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L2004-L2007) virt driver API method is called to actually boot the server instance.
 
 Each virt driver implements `spawn()` in a completely different way. This is to
 be expected, of course. Different hypervisors have unique ways of communicating
@@ -570,7 +570,7 @@ running on the hypervisor (or baremetal hardware in the case of Ironic)
 
 ### Save instance state to cell DB
 
-The final step in the launch process is to ensure we [save the instance's state](https://github.com/openstack/nova/blob/8fdb1372/nova/compute/manager.py#L2107-L2110)
+The final step in the launch process is to ensure we [save the instance's state](https://github.com/openstack/nova/blob/stable/pike/nova/compute/manager.py#L2107-L2110)
 to the cell database. There are actually numerous places in the launch process
 where we save the instance's state to the cell database. But the final instance
 state save is the one that sets the instance state to 'active' and indicates to
