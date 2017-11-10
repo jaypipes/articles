@@ -26,8 +26,8 @@ At a super-high level, a successful boot request to Nova looks like this:
 ![Bird's eye view of successful launch request](images/launch-request-birdseye.png "Bird's eye view of a successful launch request")
 
 The user sends the boot request to the OpenStack Compute API, which lives at a
-logical "top-level services" layer. A set of top-level services process the
-request, determine which compute host will house the new instance, and routes
+logical "top-level services" layer. A set of top-level services processes the
+request, determines which compute host will house the new instance, and routes
 the request to the appropriate cell. Cells are internal (to Nova) groups of
 compute hosts. Once the target compute host receives the build request, it
 spawns the instance on its hypervisor.
@@ -72,7 +72,7 @@ will inevitably end up making an HTTP request to the [`POST
 OpenStack Compute HTTP API.
 
 For completeness, it's worth mentioning that before the client actually
-communicated with the OpenStack Compute API, the client first must communicate
+communicates with the OpenStack Compute API, the client first must communicate
 with the OpenStack Identity API (Keystone) in order to get an access token.
 This access token is then supplied in the HTTP headers by the client in its
 request to the OpenStack Compute API.
@@ -194,11 +194,11 @@ the request.
 
 **Note**: We keep saying "each of the instances in the request". This is
 because the OpenStack Compute API's `POST /servers` call allows the user to
-specify a `min_count` value in the request. This `min_count` value is the
-number of instances (having the same flavor and image) that Nova will attempt
-to spawn for the user. Behind the scenes, when Nova sees a `min_count` value
-greater than 1, it creates multiple build requests, up to the value of
-`min_count`.
+specify `min_count` and `max_count` values in the request. The `min_count` value
+is the minimum number of instances (having the same flavor and image) that Nova
+will attempt to spawn for the user. Behind the scenes, when Nova sees a `min_count`
+value greater than 1, it creates multiple build requests, up to the value of
+`max_count`.
 
 #### Scheduler asks Placement for possible destination hosts
 
@@ -449,8 +449,8 @@ records](https://github.com/openstack/nova/blob/stable/pike/nova/objects/resourc
 in the Placement service's database in a transactional manner.
 
 The Pike release of OpenStack brought a major change to the boot process.
-Before Ocata, we claim resources right before the instance is spawned on a
-compute host, and we perform the claim operation **_on the compute host
+Before Pike, we claimed resources right before the instance was spawned on a
+compute host, and we performed the claim operation **_on the compute host
 itself_**. This approach was problematic in a number of ways, but one of the
 biggest problems was that due to the long period of time in between selection
 of a destination host (by the scheduler) and the actual resource claim on the
@@ -551,7 +551,7 @@ codebase. It's that there be dragons with a bad case of diarrhea.
 
 ### Hypervisor spawns instance
 
-Now that `nova-compute` has information about network and block devices, has
+Now that `nova-compute` has information about network and block devices, and has
 prepped those devices for the new instance, it's time to ask the hypervisor to
 actually boot the instance. The virt driver API method is the abstraction
 inside of `nova-compute` that allows us to rely on a variety of hypervisors
