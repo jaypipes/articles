@@ -68,8 +68,9 @@ large hierarchical organization's employee directory.
 
 ### Brick and mortar store
 
-The brick-and-mortar storage application is all about recording information for
-an imaginary home-goods store: orders, customer, suppliers, products, etc.
+The brick-and-mortar store point-of-sale application is all about recording
+information for an imaginary home-goods store: orders, customer, suppliers,
+products, etc.
 
 ![brick-and-mortar store E-R diagram](uuid-vs-integer/images/brick-and-mortar-e-r.png "Entity-relationship diagram for brick-and-mortar store application")
 
