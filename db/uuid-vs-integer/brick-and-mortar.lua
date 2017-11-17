@@ -4,8 +4,6 @@ if sysbench.cmdline.command == nil then
 end
 
 sysbench.cmdline.options = {
-    application =
-        {"Application to benchmark ('brick-and-mortar', 'employee-directory')", "brick-and-mortar"},
     schema_design =
         {"Schema design to benchmark", "a"},
     num_products =
@@ -44,7 +42,28 @@ function prepare()
     local con = drv:connect()
     local drv_name = drv:name()
 
-    local schema_path = script_path() .. 'schemas/' .. sysbench.opt.application .. '/' .. sysbench.opt.schema_design .. '.' .. drv_name
+    local schema_path = script_path() .. 'schemas/brick-and-mortar/' .. sysbench.opt.schema_design .. '.' .. drv_name
     local schema_file = assert(io.open(schema_path))
     local schema_sql = schema_file:read("*all")
+
+    for stmt in string.gmatch(schema_sql, ".*;\n\n") do
+        con:query(stmt)
+    end
+
+    -- TODO(jaypipes): Load up the tables with sample data
+end
+
+-- Completely removes and re-creates the database/catalog being used for
+-- testing
+function cleanup()
+    validate()
+
+    local drv = sysbench.sql.driver()
+    local con = drv:connect()
+    local drv_name = drv:name()
+
+    if drv_name == 'mysql' then
+        con:query("DROP SCHEMA IF EXISTS `" .. sysbench.opt.mysql_db .. "`")
+        con:query("CREATE SCHEMA `" .. sysbench.opt.mysql_db .. "`")
+    end
 end

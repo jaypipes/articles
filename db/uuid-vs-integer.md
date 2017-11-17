@@ -12,10 +12,10 @@ very important, focusing on them exclusively means that there are some critical
 points left out from the overall discussion of application performance and
 query efficiency.
 
-This article aims to provider the most thorough comparison of UUID and integer
-field performance. We'll be examining schemas that represent real-world
-application scenarios and run a series of comparative benchmarks that
-demonstrate the impact of using one strategy over another.
+This article aims to provide a thorough comparison of UUID and integer field
+performance. We'll be examining schemas that represent real-world application
+scenarios and run a series of comparative benchmarks that demonstrate the
+impact of using one strategy over another.
 
 1. [Overview](#overview)
 1. [Application database schemas](#application-databases)

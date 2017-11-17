@@ -1,8 +1,4 @@
-DROP SCHEMA IF EXISTS brick_mortar_c;
-
-CREATE SCHEMA brick_mortar_c;
-
-CREATE TABLE suppliers (
+CREATE TABLE IF NOT EXISTS suppliers (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     uuid VARCHAR(36) NOT NULL,
     name VARCHAR(200) NOT NULL,
@@ -15,7 +11,7 @@ CREATE TABLE suppliers (
     INDEX ix_uuid (uuid)
 );
 
-CREATE TABLE products (
+CREATE TABLE IF NOT EXISTS products (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     uuid VARCHAR(36) NOT NULL,
     name VARCHAR(200) NOT NULL,
@@ -25,7 +21,7 @@ CREATE TABLE products (
     INDEX ix_uuid (uuid)
 );
 
-CREATE TABLE product_price_history (
+CREATE TABLE IF NOT EXISTS product_price_history (
     product_id INT NOT NULL,
     starting_on DATETIME NOT NULL,
     ending_on DATETIME NOT NULL,
@@ -33,7 +29,7 @@ CREATE TABLE product_price_history (
     PRIMARY KEY (product_id, starting_on, ending_on)
 );
 
-CREATE TABLE inventories (
+CREATE TABLE IF NOT EXISTS inventories (
     product_id INT NOT NULL,
     supplier_id INT NOT NULL,
     total INT NOT NULL,
@@ -41,7 +37,7 @@ CREATE TABLE inventories (
     INDEX ix_supplier_id (supplier_id)
 );
 
-CREATE TABLE customers (
+CREATE TABLE IF NOT EXISTS customers (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     uuid VARCHAR(36) NOT NULL,
     name VARCHAR(200) NOT NULL,
@@ -54,7 +50,7 @@ CREATE TABLE customers (
     INDEX ix_uuid (uuid)
 );
 
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     customer_id INT NOT NULL,
     uuid VARCHAR(36) NOT NULL,
@@ -65,7 +61,7 @@ CREATE TABLE orders (
     INDEX ix_uuid (uuid)
 );
 
-CREATE order_details (
+CREATE TABLE IF NOT EXISTS order_details (
     order_id INT NOT NULL,
     product_id INT NOT NULL,
     amount INT NOT NULL,
