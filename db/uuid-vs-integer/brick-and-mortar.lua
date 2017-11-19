@@ -34,12 +34,51 @@ CREATE TABLE IF NOT EXISTS customers (
     updated_on DATETIME NULL
 )
 ]]
+    },
+    b = {
+        customers = [[
+CREATE TABLE IF NOT EXISTS customers (
+    uuid VARCHAR(36) NOT NULL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    address TEXT NOT NULL,
+    state VARCHAR(20) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    postcode VARCHAR(20) NOT NULL,
+    created_on DATETIME NOT NULL,
+    updated_on DATETIME NULL
+)
+]]
+    },
+    c = {
+        customers = [[
+CREATE TABLE IF NOT EXISTS customers (
+    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    uuid VARCHAR(36) NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    address TEXT NOT NULL,
+    state VARCHAR(20) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    postcode VARCHAR(20) NOT NULL,
+    created_on DATETIME NOT NULL,
+    updated_on DATETIME NULL,
+    UNIQUE INDEX uix_uuid (uuid)
+)
+]]
     }
 }
 
 _insert_queries = {
     a = {
-        customers = "INSERT INTO customers (id, name, address, city, state, postcode, created_on, updated_on) VALUES"
+        customers = "INSERT INTO customers (id, name, address, city, state, postcode, created_on, updated_on) VALUES",
+        customers_values = "(NULL, '%s', '%s', '%s', '%s', '%s', NOW(), NOW())"
+    },
+    b = {
+        customers = "INSERT INTO customers (uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
+        customers_values = "(UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())"
+    },
+    c = {
+        customers = "INSERT INTO customers (id, uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
+        customers_values = "(NULL, UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())"
     }
 }
 
@@ -92,16 +131,17 @@ function _create_customers(schema_design)
     print(string.format("PREPARE: found %d customer records. creating %d customer records.", num_records, num_needed))
 
     local query = _insert_queries[schema_design]['customers']
+    local values_tpl = _insert_queries[schema_design]['customers_values']
 
     con:bulk_insert_init(query)
     for i = 1, num_needed do
         local c_name = sysbench.rand.string(name_tpl)
         local c_address = sysbench.rand.string(address_tpl)
         local c_city = sysbench.rand.string(city_tpl)
-        local c_city = sysbench.rand.string(state_tpl)
+        local c_state = sysbench.rand.string(state_tpl)
         local c_postcode = sysbench.rand.string(postcode_tpl)
         local values = string.format(
-            "(NULL, '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
+            values_tpl,
             c_name, c_address, c_city, c_state, c_postcode
         )
         con:bulk_insert_next(values)
