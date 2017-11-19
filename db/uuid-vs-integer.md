@@ -95,15 +95,93 @@ examine in this article:
 
 ### Schema design A: Auto-incrementing integer primary key, no UUIDs
 
-TODO
+Schema Design "A" represents a database design strategy that **_only_** uses
+auto-incrementing integers as primary keys. Application users look up entities
+by using this auto-incrementing integer as the identifier for various objects
+in the system.
+
+For MySQL, this means that tables in the application schemas are all defined
+with an `id` column as the primary key in the following manner:
+
+```sql
+CREATE TABLE products (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  ...
+);
+```
+
+For PostgreSQL, this means tables in the application schemas are all defined
+with an `id` column as the primary key in the following manner:
+
+```sql
+CREATE TABLE products (
+  id SERIAL NOT NULL PRIMARY KEY,
+  ...
+);
+```
 
 ### Schema design B: UUID primary key
 
-TODO
+Schema Design "B" represents a database design strategy that **_only_** uses a
+UUID column for the primary key of various entities. Application users use the
+UUID as record identifiers.
+
+For MySQL, this means that tables in the application schemas are all defined
+with a `uuid` column as the primary key in the following manner:
+
+```sql
+CREATE TABLE products (
+  uuid CHAR(36) NOT NULL PRIMARY KEY,
+  ...
+);
+```
+
+For PostgreSQL, this means tables in the application schemas are all defined
+with an `uuid` column as the primary key in the following manner:
+
+```sql
+CREATE TABLE products (
+  id UUID NOT NULL PRIMARY KEY,
+  ...
+);
+```
+
+Note that PostgreSQL has a native UUID type.
 
 ### Schema design C: Auto-incrementing integer primary key, UUID externals
 
-TODO
+Schema Design "C" represents a database design strategy that uses
+auto-incrementing integers as the primary key for entities, but these integer
+keys are not exposed to users. Instead, UUIDs are used as the identifiers that
+application users utilize to look up specific records in the application.
+
+In other words, there is a secondary unique constraint/key on a UUID column for
+each table in the schema.
+
+For MySQL, this means that tables in the application schemas are all defined
+with an `id` column as the primary key and a `uuid` secondary key in the
+following manner:
+
+```sql
+CREATE TABLE products (
+  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  uuid CHAR(36) NOT NULL,
+  ...
+  UNIQUE INDEX uix_uuid (uuid)
+);
+```
+
+For PostgreSQL, this means that tables in the application schemas are all
+defined with an `id` column as the primary key and a `uuid` secondary key in
+the following manner:
+
+```sql
+CREATE TABLE products (
+  id SERIAL NOT NULL PRIMARY KEY,
+  uuid UUID NOT NULL UNIQUE,
+  ...
+);
+```
 
 ## Application data patterns
 

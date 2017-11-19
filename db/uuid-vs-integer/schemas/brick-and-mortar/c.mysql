@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS suppliers (
     postcode VARCHAR(20) NOT NULL,
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL,
-    INDEX ix_uuid (uuid)
+    UNIQUE INDEX uix_uuid (uuid)
 );
 
 CREATE TABLE IF NOT EXISTS products (
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS products (
     description TEXT NULL
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL,
-    INDEX ix_uuid (uuid)
+    UNIQUE INDEX uix_uuid (uuid)
 );
 
 CREATE TABLE IF NOT EXISTS product_price_history (
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS customers (
     postcode VARCHAR(20) NOT NULL,
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL,
-    INDEX ix_uuid (uuid)
+    UNIQUE INDEX uix_uuid (uuid)
 );
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS orders (
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL,
     INDEX ix_customer_id (customer_id),
-    INDEX ix_uuid (uuid)
+    UNIQUE INDEX uix_uuid (uuid)
 );
 
 CREATE TABLE IF NOT EXISTS order_details (
