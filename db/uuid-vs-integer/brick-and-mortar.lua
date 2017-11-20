@@ -12,10 +12,8 @@ sysbench.cmdline.options = {
         {"Number of suppliers to create", 1000},
     num_customers =
         {"Number of customers to create", 10000},
-    min_products_per_supplier =
-        {"Min number of products per supplier", 1},
-    max_products_per_supplier =
-        {"Max number of products per supplier", 100},
+    num_inventories =
+        {"Number of inventory records create", 50000},
     num_orders =
         {"Number of orders to create", 100000},
     min_order_items =
@@ -268,7 +266,7 @@ _insert_queries = {
         suppliers = "INSERT INTO suppliers (id, name, address, city, state, postcode, created_on, updated_on) VALUES",
         suppliers_values = "(NULL, '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
-        inventories_values = "(NULL, %d, %d, %d)"
+        inventories_values = "(%d, %d, %d)",
     },
     b = {
         customers = "INSERT INTO customers (uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
@@ -278,7 +276,7 @@ _insert_queries = {
         suppliers = "INSERT INTO suppliers (uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
         suppliers_values = "(UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_uuid, supplier_uuid, total) VALUES",
-        inventories_values = "(NULL, '%s', '%s', %d)"
+        inventories_values = "('%s', '%s', %d)"
     },
     c = {
         customers = "INSERT INTO customers (id, uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
@@ -288,7 +286,7 @@ _insert_queries = {
         suppliers = "INSERT INTO suppliers (id, uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
         suppliers_values = "(NULL, UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
-        inventories_values = "(NULL, %d, %d, %d)"
+        inventories_values = "(%d, %d, %d)"
     }
 }
 
@@ -326,11 +324,16 @@ state_tpl = "##############"
 postcode_tpl = "######"
 
 function _create_consumer_side(schema_design)
-    local num_records = _num_records_in_table('customers')
-    local num_needed = sysbench.opt.num_customers - num_records
+    local num_customers = _num_records_in_table('customers')
+    local num_customers_needed = sysbench.opt.num_customers - num_customers
 
-    print(string.format("PREPARE: found %d customer records. creating %d customer records.", num_records, num_needed))
+    print(string.format("PREPARE: found %d customer records.", num_customers))
+    if num_customers_needed > 0 then
+        _populate_customers(schema_design, num_customers_needed)
+    end
+end
 
+function _populate_customers(schema_design, num_needed)
     local query = _insert_queries[schema_design]['customers']
     local values_tpl = _insert_queries[schema_design]['customers_values']
 
@@ -348,20 +351,33 @@ function _create_consumer_side(schema_design)
         con:bulk_insert_next(values)
     end
     con:bulk_insert_done()
+    print(string.format("PREPARE: created %d customer records.", num_needed))
 end
 
 function _create_supply_side(schema_design)
     local num_products = _num_records_in_table('products')
     local num_products_needed = sysbench.opt.num_products - num_products
 
-    print(string.format("PREPARE: found %d product records. creating %d product records.", num_products, num_products_needed))
-    _populate_products(schema_design, num_products_needed)
+    print(string.format("PREPARE: found %d product records.", num_products))
+    if num_products_needed > 0 then
+        _populate_products(schema_design, num_products_needed)
+    end
 
     local num_suppliers = _num_records_in_table('suppliers')
     local num_suppliers_needed = sysbench.opt.num_suppliers - num_suppliers
 
-    print(string.format("PREPARE: found %d supplier records. creating %d supplier records.", num_suppliers, num_suppliers_needed))
-    _populate_suppliers(schema_design, num_suppliers_needed)
+    print(string.format("PREPARE: found %d supplier records.", num_suppliers))
+    if num_suppliers_needed > 0 then
+        _populate_suppliers(schema_design, num_suppliers_needed)
+    end
+
+    local num_inventories = _num_records_in_table('inventories')
+    local num_inventories_needed = sysbench.opt.num_inventories - num_inventories
+
+    print(string.format("PREPARE: found %d inventory records.", num_inventories))
+    if num_inventories_needed > 0 then
+        _populate_inventories(schema_design, num_inventories_needed)
+    end
 end
 
 function _populate_products(schema_design, num_needed)
@@ -378,6 +394,7 @@ function _populate_products(schema_design, num_needed)
         con:bulk_insert_next(values)
     end
     con:bulk_insert_done()
+    print(string.format("PREPARE: created %d product records.", num_needed))
 end
 
 function _populate_suppliers(schema_design, num_needed)
@@ -396,9 +413,143 @@ function _populate_suppliers(schema_design, num_needed)
             c_name, c_address, c_city, c_state, c_postcode
         )
         con:bulk_insert_next(values)
-        con:bulk_insert_next(values)
     end
     con:bulk_insert_done()
+    print(string.format("PREPARE: created %d supplier records.", num_needed))
+end
+
+_select_queries = {
+    a = {
+        random_product_batch = [[
+SELECT p.id FROM products AS p
+LEFT JOIN inventories AS i
+ ON p.id = i.product_id
+WHERE i.product_id IS NULL
+GROUP BY p.id
+ORDER BY RAND()
+LIMIT 50
+]],
+        random_supplier_batch = [[
+SELECT s.id FROM suppliers AS s
+LEFT JOIN inventories AS i
+ ON s.id = i.supplier_id
+WHERE i.supplier_id IS NULL
+GROUP BY s.id
+ORDER BY RAND()
+LIMIT 50
+]]
+    },
+    b = {
+        random_product_batch = [[
+SELECT p.uuid FROM products AS p
+LEFT JOIN inventories AS i
+ ON p.uuid = i.product_uuid
+WHERE i.product_uuid IS NULL
+GROUP BY p.uuid
+ORDER BY RAND()
+LIMIT 50
+]],
+        random_supplier_batch = [[
+SELECT s.uuid FROM suppliers AS s
+LEFT JOIN inventories AS i
+ ON s.uuid = i.supplier_uuid
+WHERE i.supplier_uuid IS NULL
+GROUP BY s.uuid
+ORDER BY RAND()
+LIMIT 50
+]]
+    },
+    c = {
+        random_product_batch = [[
+SELECT p.id FROM products AS p
+LEFT JOIN inventories AS i
+ ON p.id = i.product_id
+WHERE i.product_id IS NULL
+GROUP BY p.id
+ORDER BY RAND()
+LIMIT 50
+]],
+        random_supplier_batch = [[
+SELECT s.id FROM suppliers AS s
+LEFT JOIN inventories AS i
+ ON s.id = i.supplier_id
+WHERE i.supplier_id IS NULL
+GROUP BY s.id
+ORDER BY RAND()
+LIMIT 50
+]]
+    }
+}
+
+-- Get a batch of random product identifiers that are not already in
+-- inventories table. Note this isn't a quick operation doing ORDER BY
+-- RANDOM(), but this is only done in the prepare step so we should be OK
+function _get_random_product_batch(schema_design)
+    local query = _select_queries[schema_design]['random_product_batch']
+    rs = con:query(query)
+    product_ids = {}
+    for i = 1, rs.nrows do
+        row = rs:fetch_row()
+        table.insert(product_ids, row[1])
+    end
+    return product_ids
+end
+
+-- Get a batch of random supplier identifiers that are not already in
+-- inventories table. Note this isn't a quick operation doing ORDER BY
+-- RANDOM(), but this is only done in the prepare step so we should be OK
+function _get_random_supplier_batch(schema_design)
+    local query = _select_queries[schema_design]['random_supplier_batch']
+    rs = con:query(query)
+    supplier_ids = {}
+    for i = 1, rs.nrows do
+        row = rs:fetch_row()
+        table.insert(supplier_ids, row[1])
+    end
+    return supplier_ids
+end
+
+function _populate_inventories(schema_design, num_needed)
+    local query = _insert_queries[schema_design]['inventories']
+    local values_tpl = _insert_queries[schema_design]['inventories_values']
+
+    local batch_n = 1000
+    local created_n = 0
+    while num_needed > 0 do
+        -- Insert a set of inventory records for each product and supplier,
+        -- with the number of products randomized between 1 amd the number of
+        -- products in the system
+        local products = _get_random_product_batch(schema_design)
+        local suppliers = _get_random_supplier_batch(schema_design)
+        if table.maxn(products) == 0 or table.maxn(suppliers) == 0 then
+            break
+        end
+        for sidx, supplier_id in ipairs(suppliers) do
+            con:bulk_insert_init(query)
+            local num_products = sysbench.rand.uniform(1, sysbench.opt.num_products)
+            if num_products > table.maxn(products) then
+                num_products = table.maxn(products)
+            end
+            for i = 1, num_products do
+                local product_id = products[i]
+                local total = sysbench.rand.uniform(1, 1000)
+                local values = string.format(values_tpl, product_id, supplier_id, total)
+                con:bulk_insert_next(values)
+                created_n = created_n + 1
+                num_needed = num_needed - 1
+                batch_n = batch_n - 1
+                if batch_n == 0 then
+                    con:bulk_insert_done()
+                    con:bulk_insert_init(query)
+                    batch_n = 1000
+                end
+            end
+            con:bulk_insert_done()
+        end
+    end
+    if created_n > 0 then
+        print(string.format("PREPARE: created %d inventory records.", created_n))
+    end
 end
 
 -- Creates the schema tables and populates the tables with data up to the
