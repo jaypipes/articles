@@ -13,9 +13,9 @@ sysbench.cmdline.options = {
     num_customers =
         {"Number of customers to create", 10000},
     num_inventories =
-        {"Number of inventory records create", 50000},
+        {"Number of inventory records create", 30000},
     num_orders =
-        {"Number of orders to create", 100000},
+        {"Number of orders to create", 40000},
     min_order_items =
         {"Min number of order items to create for an order", 1},
     max_order_items =
@@ -267,6 +267,7 @@ _insert_queries = {
         suppliers_values = "(NULL, '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
         inventories_values = "(%d, %d, %d)",
+        orders = "INSERT INTO orders (id, customer_id, status, created_on, updated_on) VALUES (NULL, ?, ?, NOW(), NOW())"
     },
     b = {
         customers = "INSERT INTO customers (uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
@@ -276,7 +277,8 @@ _insert_queries = {
         suppliers = "INSERT INTO suppliers (uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
         suppliers_values = "(UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_uuid, supplier_uuid, total) VALUES",
-        inventories_values = "('%s', '%s', %d)"
+        inventories_values = "('%s', '%s', %d)",
+        orders = "INSERT INTO orders (uuid, customer_uuid, status, created_on, updated_on) VALUES (UUID(), ?, ?, NOW(), NOW())"
     },
     c = {
         customers = "INSERT INTO customers (id, uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
@@ -286,7 +288,8 @@ _insert_queries = {
         suppliers = "INSERT INTO suppliers (id, uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
         suppliers_values = "(NULL, UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
-        inventories_values = "(%d, %d, %d)"
+        inventories_values = "(%d, %d, %d)",
+        orders = "INSERT INTO orders (id, uuid, customer_id, status, created_on, updated_on) VALUES (NULL, UUID(), ?, ?, NOW(), NOW())"
     }
 }
 
@@ -309,6 +312,11 @@ WHERE i.supplier_id IS NULL
 GROUP BY s.id
 ORDER BY RAND()
 LIMIT 50
+]],
+        random_customer_batch = [[
+SELECT c.id FROM customers AS c
+ORDER BY RAND()
+LIMIT 50
 ]]
     },
     b = {
@@ -329,6 +337,11 @@ WHERE i.supplier_uuid IS NULL
 GROUP BY s.uuid
 ORDER BY RAND()
 LIMIT 50
+]],
+        random_customer_batch = [[
+SELECT c.uuid FROM customers AS c
+ORDER BY RAND()
+LIMIT 50
 ]]
     },
     c = {
@@ -347,6 +360,11 @@ LEFT JOIN inventories AS i
  ON s.id = i.supplier_id
 WHERE i.supplier_id IS NULL
 GROUP BY s.id
+ORDER BY RAND()
+LIMIT 50
+]],
+        random_customer_batch = [[
+SELECT c.id FROM customers AS c
 ORDER BY RAND()
 LIMIT 50
 ]]
@@ -394,6 +412,14 @@ function _create_consumer_side(schema_design)
     if num_customers_needed > 0 then
         _populate_customers(schema_design, num_customers_needed)
     end
+
+    local num_orders = _num_records_in_table('orders')
+    local num_orders_needed = sysbench.opt.num_orders - num_orders
+
+    print(string.format("PREPARE: found %d order records.", num_orders))
+    if num_orders_needed > 0 then
+        _populate_orders(schema_design, num_orders_needed)
+    end
 end
 
 function _populate_customers(schema_design, num_needed)
@@ -415,6 +441,74 @@ function _populate_customers(schema_design, num_needed)
     end
     con:bulk_insert_done()
     print(string.format("PREPARE: created %d customer records.", num_needed))
+end
+
+_order_status_weighted = {
+    'complete', 'complete', 'complete', 'complete', 'complete', 'complete', 'complete', 'complete',
+    'complete', 'complete', 'complete', 'complete', 'complete', 'complete', 'complete', 'complete',
+    'processing', 'processing',
+    'pending',
+    'shipping',
+    'shipping',
+    'canceled',
+}
+-- Returns a realistic order status based on a randomized selection of weighted
+-- order statuses
+function _create_order_status()
+    num_statuses = table.maxn(_order_status_weighted)
+    selected = sysbench.rand.uniform(1, num_statuses)
+    return _order_status_weighted[selected]
+end
+
+-- Get a batch of random customer identifiers. Note this isn't a quick
+-- operation doing ORDER BY RANDOM(), but this is only done in the prepare step
+-- so we should be OK
+function _get_random_customer_batch(schema_design)
+    local query = _select_queries[schema_design]['random_customer_batch']
+    rs = con:query(query)
+    customer_ids = {}
+    for i = 1, rs.nrows do
+        row = rs:fetch_row()
+        table.insert(customer_ids, row[1])
+    end
+    return customer_ids
+end
+
+function _populate_orders(schema_design, num_needed)
+    local orders_query = _insert_queries[schema_design]['orders']
+    local orders_stmt = con:prepare(orders_query)
+    local customer_param
+    if schema_design ~= "b" then
+        customer_param = orders_stmt:bind_create(sysbench.sql.type.INT)
+    else
+        customer_param = orders_stmt:bind_create(sysbench.sql.type.CHAR, 36)
+    end
+    local status_param = orders_stmt:bind_create(sysbench.sql.type.VARCHAR, 20)
+    orders_stmt:bind_param(customer_param, status_param)
+
+    local batch_n = 1000
+    local created_n = 0
+    while num_needed > 0 do
+        local customers = _get_random_customer_batch(schema_design)
+        if table.maxn(customers) == 0 then
+            break
+        end
+        for cidx, customer_id in ipairs(customers) do
+            local status = _create_order_status()
+            if schema_design ~= "b" then
+                customer_param:set(tonumber(customer_id))
+            else
+                customer_param:set(customer_id)
+            end
+            status_param:set(status)
+            created_n = created_n + 1
+            num_needed = num_needed - 1
+            orders_stmt:execute()
+        end
+    end
+    if created_n > 0 then
+        print(string.format("PREPARE: created %d order records.", created_n))
+    end
 end
 
 function _create_supply_side(schema_design)
