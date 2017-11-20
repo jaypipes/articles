@@ -302,22 +302,12 @@ function _init()
     end
 end
 
-function _script_path()
-    local str = debug.getinfo(2, "S").source:sub(2)
-    return str:match("(.*/)")
-end
-
 function _num_records_in_table(table_name)
     local num_recs = con:query_row("SELECT COUNT(*) FROM " .. table_name)
     return tonumber(num_recs)
 end
 
 function _create_schema(schema_design)
-    local schema_path = _script_path() .. 'schemas/brick-and-mortar/' .. schema_design .. '.' .. drv_name
-    local schema_file = assert(io.open(schema_path))
-    local schema_sql = schema_file:read("*all")
-    schema_file:close()
-
     print("PREPARE: ensuring database schema")
 
     for tbl, sql in pairs(_schema[schema_design]) do
@@ -365,17 +355,47 @@ function _create_supply_side(schema_design)
     local num_products_needed = sysbench.opt.num_products - num_products
 
     print(string.format("PREPARE: found %d product records. creating %d product records.", num_products, num_products_needed))
+    _populate_products(schema_design, num_products_needed)
 
+    local num_suppliers = _num_records_in_table('suppliers')
+    local num_suppliers_needed = sysbench.opt.num_suppliers - num_suppliers
+
+    print(string.format("PREPARE: found %d supplier records. creating %d supplier records.", num_suppliers, num_suppliers_needed))
+    _populate_suppliers(schema_design, num_suppliers_needed)
+end
+
+function _populate_products(schema_design, num_needed)
     local query = _insert_queries[schema_design]['products']
     local values_tpl = _insert_queries[schema_design]['products_values']
 
     con:bulk_insert_init(query)
-    for i = 1, num_products_needed do
+    for i = 1, num_needed do
         local c_name = sysbench.rand.string(name_tpl)
         local c_description = sysbench.rand.string(description_tpl)
         local values = string.format(
             values_tpl, c_name, c_description
         )
+        con:bulk_insert_next(values)
+    end
+    con:bulk_insert_done()
+end
+
+function _populate_suppliers(schema_design, num_needed)
+    local query = _insert_queries[schema_design]['suppliers']
+    local values_tpl = _insert_queries[schema_design]['suppliers_values']
+
+    con:bulk_insert_init(query)
+    for i = 1, num_needed do
+        local c_name = sysbench.rand.string(name_tpl)
+        local c_address = sysbench.rand.string(address_tpl)
+        local c_city = sysbench.rand.string(city_tpl)
+        local c_state = sysbench.rand.string(state_tpl)
+        local c_postcode = sysbench.rand.string(postcode_tpl)
+        local values = string.format(
+            values_tpl,
+            c_name, c_address, c_city, c_state, c_postcode
+        )
+        con:bulk_insert_next(values)
         con:bulk_insert_next(values)
     end
     con:bulk_insert_done()
