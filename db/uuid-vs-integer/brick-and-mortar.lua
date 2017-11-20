@@ -290,6 +290,69 @@ _insert_queries = {
     }
 }
 
+_select_queries = {
+    a = {
+        random_product_batch = [[
+SELECT p.id FROM products AS p
+LEFT JOIN inventories AS i
+ ON p.id = i.product_id
+WHERE i.product_id IS NULL
+GROUP BY p.id
+ORDER BY RAND()
+LIMIT 50
+]],
+        random_supplier_batch = [[
+SELECT s.id FROM suppliers AS s
+LEFT JOIN inventories AS i
+ ON s.id = i.supplier_id
+WHERE i.supplier_id IS NULL
+GROUP BY s.id
+ORDER BY RAND()
+LIMIT 50
+]]
+    },
+    b = {
+        random_product_batch = [[
+SELECT p.uuid FROM products AS p
+LEFT JOIN inventories AS i
+ ON p.uuid = i.product_uuid
+WHERE i.product_uuid IS NULL
+GROUP BY p.uuid
+ORDER BY RAND()
+LIMIT 50
+]],
+        random_supplier_batch = [[
+SELECT s.uuid FROM suppliers AS s
+LEFT JOIN inventories AS i
+ ON s.uuid = i.supplier_uuid
+WHERE i.supplier_uuid IS NULL
+GROUP BY s.uuid
+ORDER BY RAND()
+LIMIT 50
+]]
+    },
+    c = {
+        random_product_batch = [[
+SELECT p.id FROM products AS p
+LEFT JOIN inventories AS i
+ ON p.id = i.product_id
+WHERE i.product_id IS NULL
+GROUP BY p.id
+ORDER BY RAND()
+LIMIT 50
+]],
+        random_supplier_batch = [[
+SELECT s.id FROM suppliers AS s
+LEFT JOIN inventories AS i
+ ON s.id = i.supplier_id
+WHERE i.supplier_id IS NULL
+GROUP BY s.id
+ORDER BY RAND()
+LIMIT 50
+]]
+    }
+}
+
 function _init()
     drv = sysbench.sql.driver()
     con = drv:connect()
@@ -417,69 +480,6 @@ function _populate_suppliers(schema_design, num_needed)
     con:bulk_insert_done()
     print(string.format("PREPARE: created %d supplier records.", num_needed))
 end
-
-_select_queries = {
-    a = {
-        random_product_batch = [[
-SELECT p.id FROM products AS p
-LEFT JOIN inventories AS i
- ON p.id = i.product_id
-WHERE i.product_id IS NULL
-GROUP BY p.id
-ORDER BY RAND()
-LIMIT 50
-]],
-        random_supplier_batch = [[
-SELECT s.id FROM suppliers AS s
-LEFT JOIN inventories AS i
- ON s.id = i.supplier_id
-WHERE i.supplier_id IS NULL
-GROUP BY s.id
-ORDER BY RAND()
-LIMIT 50
-]]
-    },
-    b = {
-        random_product_batch = [[
-SELECT p.uuid FROM products AS p
-LEFT JOIN inventories AS i
- ON p.uuid = i.product_uuid
-WHERE i.product_uuid IS NULL
-GROUP BY p.uuid
-ORDER BY RAND()
-LIMIT 50
-]],
-        random_supplier_batch = [[
-SELECT s.uuid FROM suppliers AS s
-LEFT JOIN inventories AS i
- ON s.uuid = i.supplier_uuid
-WHERE i.supplier_uuid IS NULL
-GROUP BY s.uuid
-ORDER BY RAND()
-LIMIT 50
-]]
-    },
-    c = {
-        random_product_batch = [[
-SELECT p.id FROM products AS p
-LEFT JOIN inventories AS i
- ON p.id = i.product_id
-WHERE i.product_id IS NULL
-GROUP BY p.id
-ORDER BY RAND()
-LIMIT 50
-]],
-        random_supplier_batch = [[
-SELECT s.id FROM suppliers AS s
-LEFT JOIN inventories AS i
- ON s.id = i.supplier_id
-WHERE i.supplier_id IS NULL
-GROUP BY s.id
-ORDER BY RAND()
-LIMIT 50
-]]
-    }
-}
 
 -- Get a batch of random product identifiers that are not already in
 -- inventories table. Note this isn't a quick operation doing ORDER BY
