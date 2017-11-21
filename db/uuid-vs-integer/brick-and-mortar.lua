@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS order_details (
     b = {
         customers = [[
 CREATE TABLE IF NOT EXISTS customers (
-    uuid VARCHAR(36) NOT NULL PRIMARY KEY,
+    uuid CHAR(36) NOT NULL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
     address TEXT NOT NULL,
     state VARCHAR(20) NOT NULL,
@@ -114,7 +114,7 @@ CREATE TABLE IF NOT EXISTS customers (
 ]],
         products = [[
 CREATE TABLE IF NOT EXISTS products (
-    uuid VARCHAR(36) NOT NULL PRIMARY KEY,
+    uuid CHAR(36) NOT NULL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
     description TEXT NULL,
     created_on DATETIME NOT NULL,
@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS products (
 ]],
         product_price_history = [[
 CREATE TABLE IF NOT EXISTS product_price_history (
-    product_uuid VARCHAR(36) NOT NULL,
+    product_uuid CHAR(36) NOT NULL,
     starting_on DATETIME NOT NULL,
     ending_on DATETIME NOT NULL,
     price DECIMAL(10,2) NOT NULL,
@@ -132,8 +132,8 @@ CREATE TABLE IF NOT EXISTS product_price_history (
 ]],
         inventories = [[
 CREATE TABLE IF NOT EXISTS inventories (
-    product_uuid VARCHAR(36) NOT NULL,
-    supplier_uuid VARCHAR(36) NOT NULL,
+    product_uuid CHAR(36) NOT NULL,
+    supplier_uuid CHAR(36) NOT NULL,
     total INT NOT NULL,
     PRIMARY KEY (product_uuid, supplier_uuid),
     INDEX ix_supplier_uuid (supplier_uuid)
@@ -141,7 +141,7 @@ CREATE TABLE IF NOT EXISTS inventories (
 ]],
         suppliers = [[
 CREATE TABLE IF NOT EXISTS suppliers (
-    uuid VARCHAR(36) NOT NULL PRIMARY KEY,
+    uuid CHAR(36) NOT NULL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
     address TEXT NOT NULL,
     city VARCHAR(50) NOT NULL,
@@ -153,8 +153,8 @@ CREATE TABLE IF NOT EXISTS suppliers (
 ]],
         orders = [[
 CREATE TABLE IF NOT EXISTS orders (
-    uuid VARCHAR(36) NOT NULL PRIMARY KEY,
-    customer_uuid VARCHAR(26) NOT NULL,
+    uuid CHAR(36) NOT NULL PRIMARY KEY,
+    customer_uuid CHAR(36) NOT NULL,
     status VARCHAR(20) NOT NULL,
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL,
@@ -164,7 +164,7 @@ CREATE TABLE IF NOT EXISTS orders (
         order_details = [[
 CREATE TABLE IF NOT EXISTS order_details (
     order_uuid VARCHAR(36) NOT NULL,
-    product_uuid VARCHAR(36) NOT NULL,
+    product_uuid CHAR(36) NOT NULL,
     amount INT NOT NULL,
     fulfilling_supplier_uuid VARCHAR(36) NOT NULL,
     PRIMARY KEY (order_uuid, product_uuid),
@@ -177,7 +177,7 @@ CREATE TABLE IF NOT EXISTS order_details (
         customers = [[
 CREATE TABLE IF NOT EXISTS customers (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    uuid VARCHAR(36) NOT NULL,
+    uuid CHAR(36) NOT NULL,
     name VARCHAR(200) NOT NULL,
     address TEXT NOT NULL,
     state VARCHAR(20) NOT NULL,
@@ -193,7 +193,7 @@ CREATE TABLE IF NOT EXISTS products (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     uuid VARCHAR(36) NOT NULL,
     name VARCHAR(200) NOT NULL,
-    description TEXT NULL
+    description TEXT NULL,
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL,
     UNIQUE INDEX uix_uuid (uuid)
@@ -267,7 +267,6 @@ _insert_queries = {
         suppliers_values = "(NULL, '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
         inventories_values = "(%d, %d, %d)",
-        orders = "INSERT INTO orders (id, customer_id, status, created_on, updated_on) VALUES (NULL, ?, ?, NOW(), NOW())"
     },
     b = {
         customers = "INSERT INTO customers (uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
@@ -278,7 +277,6 @@ _insert_queries = {
         suppliers_values = "(UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_uuid, supplier_uuid, total) VALUES",
         inventories_values = "('%s', '%s', %d)",
-        orders = "INSERT INTO orders (uuid, customer_uuid, status, created_on, updated_on) VALUES (UUID(), ?, ?, NOW(), NOW())"
     },
     c = {
         customers = "INSERT INTO customers (id, uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
@@ -289,7 +287,89 @@ _insert_queries = {
         suppliers_values = "(NULL, UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
         inventories_values = "(%d, %d, %d)",
-        orders = "INSERT INTO orders (id, uuid, customer_id, status, created_on, updated_on) VALUES (NULL, UUID(), ?, ?, NOW(), NOW())"
+    }
+}
+
+statements = {
+    a = {
+        insert_order = {
+            sql = [[
+INSERT INTO orders (id, customer_id, status, created_on, updated_on)
+VALUES (NULL, ?, ?, NOW(), NOW())
+]],
+            binds = {
+                sysbench.sql.type.INT,
+                {sysbench.sql.type.VARCHAR, 20}
+            }
+        },
+        select_orders_by_customer = {
+            sql = [[
+SELECT o.id, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.amount) AS total_amount
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+WHERE o.customer_id = ?
+GROUP BY o.id
+ORDER BY o.created_on DESC
+]],
+            binds = {
+                sysbench.sql.type.INT
+            }
+        }
+    },
+    b = {
+        insert_order = {
+            sql = [[
+INSERT INTO orders (uuid, customer_uuid, status, created_on, updated_on)
+VALUES (UUID(), ?, ?, NOW(), NOW())
+]],
+            binds = {
+                {sysbench.sql.type.CHAR, 36},
+                {sysbench.sql.type.VARCHAR, 20}
+            }
+        },
+        select_orders_by_customer = {
+            sql = [[
+SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.amount) AS total_amount
+FROM orders AS o
+JOIN order_details AS od
+ ON o.uuid = od.order_uuid
+WHERE o.customer_uuid = ?
+GROUP BY o.uuid
+ORDER BY o.created_on DESC
+]],
+            binds = {
+                {sysbench.sql.type.CHAR, 36},
+            }
+        }
+    },
+    c = {
+        insert_order = {
+            sql = [[
+INSERT INTO orders (id, uuid, customer_id, status, created_on, updated_on)
+VALUES (NULL, UUID(), ?, ?, NOW(), NOW())
+]],
+            binds = {
+                sysbench.sql.type.INT,
+                {sysbench.sql.type.VARCHAR, 20}
+            }
+        },
+        select_orders_by_customer = {
+            sql = [[
+SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.amount) AS total_amount
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+JOIN customers AS c
+ ON o.customer_id = c.id
+WHERE c.uuid = ?
+GROUP BY o.id
+ORDER BY o.created_on DESC
+]],
+            binds = {
+                {sysbench.sql.type.CHAR, 36},
+            }
+        }
     }
 }
 
@@ -317,6 +397,11 @@ LIMIT 50
 SELECT c.id FROM customers AS c
 ORDER BY RAND()
 LIMIT 50
+]],
+        random_customer_external_ids = [[
+SELECT c.id FROM customers AS c
+ORDER BY RAND()
+LIMIT 100
 ]]
     },
     b = {
@@ -342,6 +427,11 @@ LIMIT 50
 SELECT c.uuid FROM customers AS c
 ORDER BY RAND()
 LIMIT 50
+]],
+        random_customer_external_ids = [[
+SELECT c.uuid FROM customers AS c
+ORDER BY RAND()
+LIMIT 100
 ]]
     },
     c = {
@@ -367,6 +457,11 @@ LIMIT 50
 SELECT c.id FROM customers AS c
 ORDER BY RAND()
 LIMIT 50
+]],
+        random_customer_external_ids = [[
+SELECT c.uuid FROM customers AS c
+ORDER BY RAND()
+LIMIT 100
 ]]
     }
 }
@@ -375,6 +470,7 @@ function _init()
     drv = sysbench.sql.driver()
     con = drv:connect()
     drv_name = drv:name()
+    schema_design = sysbench.opt.schema_design
 
     if drv_name ~= "mysql" and drv_name ~= "postgresql" then
         error("Unsupported database driver:" .. drv_name)
@@ -386,7 +482,7 @@ function _num_records_in_table(table_name)
     return tonumber(num_recs)
 end
 
-function _create_schema(schema_design)
+function _create_schema()
     print("PREPARE: ensuring database schema")
 
     for tbl, sql in pairs(_schema[schema_design]) do
@@ -397,20 +493,20 @@ end
 
 -- I'd like to do a random string of some range of length, but can't do that
 -- with sysbench's internal rand.string
-name_tpl = "########## ############################"
-description_tpl = "########################################################################"
-address_tpl = "################\n##############\n############"
-city_tpl = "###########################"
-state_tpl = "##############"
-postcode_tpl = "######"
+name_tpl = "@@@@@@@@@@ @@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+description_tpl = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+address_tpl = "@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@\n@@@@@@@@@@@@"
+city_tpl = "@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+state_tpl = "@@@@@@@@@@@@@@"
+postcode_tpl = "@@@@@@"
 
-function _create_consumer_side(schema_design)
+function _create_consumer_side()
     local num_customers = _num_records_in_table('customers')
     local num_customers_needed = sysbench.opt.num_customers - num_customers
 
     print(string.format("PREPARE: found %d customer records.", num_customers))
     if num_customers_needed > 0 then
-        _populate_customers(schema_design, num_customers_needed)
+        _populate_customers(num_customers_needed)
     end
 
     local num_orders = _num_records_in_table('orders')
@@ -418,11 +514,11 @@ function _create_consumer_side(schema_design)
 
     print(string.format("PREPARE: found %d order records.", num_orders))
     if num_orders_needed > 0 then
-        _populate_orders(schema_design, num_orders_needed)
+        _populate_orders(num_orders_needed)
     end
 end
 
-function _populate_customers(schema_design, num_needed)
+function _populate_customers(num_needed)
     local query = _insert_queries[schema_design]['customers']
     local values_tpl = _insert_queries[schema_design]['customers_values']
 
@@ -463,7 +559,7 @@ end
 -- Get a batch of random customer identifiers. Note this isn't a quick
 -- operation doing ORDER BY RANDOM(), but this is only done in the prepare step
 -- so we should be OK
-function _get_random_customer_batch(schema_design)
+function _get_random_customer_batch()
     local query = _select_queries[schema_design]['random_customer_batch']
     rs = con:query(query)
     customer_ids = {}
@@ -474,33 +570,53 @@ function _get_random_customer_batch(schema_design)
     return customer_ids
 end
 
-function _populate_orders(schema_design, num_needed)
-    local orders_query = _insert_queries[schema_design]['orders']
-    local orders_stmt = con:prepare(orders_query)
-    local customer_param
-    if schema_design ~= "b" then
-        customer_param = orders_stmt:bind_create(sysbench.sql.type.INT)
-    else
-        customer_param = orders_stmt:bind_create(sysbench.sql.type.CHAR, 36)
+-- Creates the prepared statement for the schema design and named statement by
+-- looking in the statements table variable and binding parameters described
+-- for the named statement to the prepared statement pointer. Returns the table
+-- object containing a "statement" key containing the prepared statement
+-- pointer and a "params" array of bound parameter pointers
+function _prepare_statement(stmt_name)
+    stmt_tbl = statements[schema_design][stmt_name]
+    assert(stmt_tbl ~= nil)
+    stmt = con:prepare(stmt_tbl.sql)
+    if table.maxn(stmt_tbl.binds) then
+        stmt_tbl.params = {}
     end
-    local status_param = orders_stmt:bind_create(sysbench.sql.type.VARCHAR, 20)
-    orders_stmt:bind_param(customer_param, status_param)
+    for idx, bind in ipairs(stmt_tbl.binds) do
+        if type(bind) ~= "table" then
+            -- Convenience, allows us to have non-array bind parameter
+            -- descriptors in the statements table
+            bind = {bind}
+        end
+        param = stmt:bind_create(unpack(bind))
+        stmt_tbl.params[idx] = param
+    end
+    if table.maxn(stmt_tbl.binds) then
+        stmt:bind_param(unpack(stmt_tbl.params))
+    end
+    statements[schema_design][stmt_name].statement = stmt
+    return stmt_tbl
+end
+
+function _populate_orders(num_needed)
+    orders_stmt_tbl = _prepare_statement('insert_order')
+    orders_stmt = orders_stmt_tbl.statement
+    orders_stmt_params = orders_stmt_tbl.params
 
     local batch_n = 1000
     local created_n = 0
     while num_needed > 0 do
-        local customers = _get_random_customer_batch(schema_design)
+        local customers = _get_random_customer_batch()
         if table.maxn(customers) == 0 then
             break
         end
-        for cidx, customer_id in ipairs(customers) do
+        for cidx, customer in ipairs(customers) do
             local status = _create_order_status()
             if schema_design ~= "b" then
-                customer_param:set(tonumber(customer_id))
-            else
-                customer_param:set(customer_id)
+                customer = tonumber(customer)
             end
-            status_param:set(status)
+            orders_stmt_params[1]:set(customer)
+            orders_stmt_params[2]:set(status)
             created_n = created_n + 1
             num_needed = num_needed - 1
             orders_stmt:execute()
@@ -511,13 +627,13 @@ function _populate_orders(schema_design, num_needed)
     end
 end
 
-function _create_supply_side(schema_design)
+function _create_supply_side()
     local num_products = _num_records_in_table('products')
     local num_products_needed = sysbench.opt.num_products - num_products
 
     print(string.format("PREPARE: found %d product records.", num_products))
     if num_products_needed > 0 then
-        _populate_products(schema_design, num_products_needed)
+        _populate_products(num_products_needed)
     end
 
     local num_suppliers = _num_records_in_table('suppliers')
@@ -525,7 +641,7 @@ function _create_supply_side(schema_design)
 
     print(string.format("PREPARE: found %d supplier records.", num_suppliers))
     if num_suppliers_needed > 0 then
-        _populate_suppliers(schema_design, num_suppliers_needed)
+        _populate_suppliers(num_suppliers_needed)
     end
 
     local num_inventories = _num_records_in_table('inventories')
@@ -533,11 +649,11 @@ function _create_supply_side(schema_design)
 
     print(string.format("PREPARE: found %d inventory records.", num_inventories))
     if num_inventories_needed > 0 then
-        _populate_inventories(schema_design, num_inventories_needed)
+        _populate_inventories(num_inventories_needed)
     end
 end
 
-function _populate_products(schema_design, num_needed)
+function _populate_products(num_needed)
     local query = _insert_queries[schema_design]['products']
     local values_tpl = _insert_queries[schema_design]['products_values']
 
@@ -554,7 +670,7 @@ function _populate_products(schema_design, num_needed)
     print(string.format("PREPARE: created %d product records.", num_needed))
 end
 
-function _populate_suppliers(schema_design, num_needed)
+function _populate_suppliers(num_needed)
     local query = _insert_queries[schema_design]['suppliers']
     local values_tpl = _insert_queries[schema_design]['suppliers_values']
 
@@ -578,7 +694,7 @@ end
 -- Get a batch of random product identifiers that are not already in
 -- inventories table. Note this isn't a quick operation doing ORDER BY
 -- RANDOM(), but this is only done in the prepare step so we should be OK
-function _get_random_product_batch(schema_design)
+function _get_random_product_batch()
     local query = _select_queries[schema_design]['random_product_batch']
     rs = con:query(query)
     product_ids = {}
@@ -592,7 +708,7 @@ end
 -- Get a batch of random supplier identifiers that are not already in
 -- inventories table. Note this isn't a quick operation doing ORDER BY
 -- RANDOM(), but this is only done in the prepare step so we should be OK
-function _get_random_supplier_batch(schema_design)
+function _get_random_supplier_batch()
     local query = _select_queries[schema_design]['random_supplier_batch']
     rs = con:query(query)
     supplier_ids = {}
@@ -603,7 +719,7 @@ function _get_random_supplier_batch(schema_design)
     return supplier_ids
 end
 
-function _populate_inventories(schema_design, num_needed)
+function _populate_inventories(num_needed)
     local query = _insert_queries[schema_design]['inventories']
     local values_tpl = _insert_queries[schema_design]['inventories_values']
 
@@ -613,8 +729,8 @@ function _populate_inventories(schema_design, num_needed)
         -- Insert a set of inventory records for each product and supplier,
         -- with the number of products randomized between 1 amd the number of
         -- products in the system
-        local products = _get_random_product_batch(schema_design)
-        local suppliers = _get_random_supplier_batch(schema_design)
+        local products = _get_random_product_batch()
+        local suppliers = _get_random_supplier_batch()
         if table.maxn(products) == 0 or table.maxn(suppliers) == 0 then
             break
         end
@@ -649,11 +765,10 @@ end
 -- Creates the schema tables and populates the tables with data up to the
 -- required record counts taken from the command-line options
 function prepare()
-    local schema_design = sysbench.opt.schema_design
     _init()
-    _create_schema(schema_design)
-    _create_supply_side(schema_design)
-    _create_consumer_side(schema_design)
+    _create_schema()
+    _create_supply_side()
+    _create_consumer_side()
 end
 
 -- Completely removes and re-creates the database/catalog being used for
@@ -670,4 +785,70 @@ function cleanup()
         con:query("DROP SCHEMA IF EXISTS `" .. sysbench.opt.mysql_db .. "`")
         con:query("CREATE SCHEMA `" .. sysbench.opt.mysql_db .. "`")
     end
+end
+
+-- Returns a batch of 100 random external customer IDs
+function _get_customer_external_ids()
+    local query = _select_queries[schema_design]['random_customer_external_ids']
+    local rs = con:query(query)
+    local customers = {}
+    for i = 1, rs.nrows do
+        row = rs:fetch_row()
+        table.insert(customers, row[1])
+    end
+    return customers
+end
+
+function thread_init()
+    _init()
+    customers = _get_customer_external_ids()
+    scenario_stmts = _prepare_scenario('lookup_orders_by_customer')
+end
+
+scenarios = {
+    lookup_orders_by_customer = {
+        statements = {
+            'select_orders_by_customer'
+        }
+    }
+}
+
+-- Creates the prepared statements for the schema design and named scenario by
+-- looking in the scenarios table variable and binding parameters described for
+-- each named scenario's set of prepared statements to the prepared statement
+-- pointer. Returns the table object containing a "statements" key which is a
+-- table containing a "statement" key that contains the prepared statement
+-- pointer and a "params" array of bound parameter pointers
+function _prepare_scenario(scenario)
+    scenario_tbl = scenarios[scenario]
+    assert(scenario_tbl ~= nil)
+
+    local scenario_stmts = {}
+
+    for st_idx, stmt_name in ipairs(scenario_tbl.statements) do
+        stmt_tbl = _prepare_statement(stmt_name)
+        scenario_stmts[st_idx] = stmt_tbl
+    end
+    return scenario_stmts
+end
+
+function execute_scenario()
+    selected = sysbench.rand.uniform(1, table.maxn(customers))
+    customer = customers[selected]
+    if schema_design == "a" then
+        customer = tonumber(customer)
+    end
+
+    for st_idx, stmt in ipairs(scenario_stmts) do
+        stmt.params[1]:set(customer)
+        stmt.statement:execute()
+    end
+end
+
+function event()
+    execute_scenario()
+end
+
+function thread_done()
+    return
 end
