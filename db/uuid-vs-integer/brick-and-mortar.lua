@@ -397,12 +397,12 @@ end
 
 -- I'd like to do a random string of some range of length, but can't do that
 -- with sysbench's internal rand.string
-name_tpl = "########## ############################"
-description_tpl = "########################################################################"
-address_tpl = "################\n##############\n############"
-city_tpl = "###########################"
-state_tpl = "##############"
-postcode_tpl = "######"
+name_tpl = "@@@@@@@@@@ @@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+description_tpl = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+address_tpl = "@@@@@@@@@@@@@@@@\n@@@@@@@@@@@@@@\n@@@@@@@@@@@@"
+city_tpl = "@@@@@@@@@@@@@@@@@@@@@@@@@@@"
+state_tpl = "@@@@@@@@@@@@@@"
+postcode_tpl = "@@@@@@"
 
 function _create_consumer_side(schema_design)
     local num_customers = _num_records_in_table('customers')
