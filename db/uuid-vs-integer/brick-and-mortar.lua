@@ -267,7 +267,6 @@ _insert_queries = {
         suppliers_values = "(NULL, '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
         inventories_values = "(%d, %d, %d)",
-        orders = "INSERT INTO orders (id, customer_id, status, created_on, updated_on) VALUES (NULL, ?, ?, NOW(), NOW())"
     },
     b = {
         customers = "INSERT INTO customers (uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
@@ -290,6 +289,45 @@ _insert_queries = {
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
         inventories_values = "(%d, %d, %d)",
         orders = "INSERT INTO orders (id, uuid, customer_id, status, created_on, updated_on) VALUES (NULL, UUID(), ?, ?, NOW(), NOW())"
+    }
+}
+
+statements = {
+    a = {
+        insert_order = {
+            sql = [[
+INSERT INTO orders (id, customer_id, status, created_on, updated_on)
+VALUES (NULL, ?, ?, NOW(), NOW())
+]],
+            binds = {
+                sysbench.sql.type.INT,
+                {sysbench.sql.type.VARCHAR, 20}
+            }
+        }
+    },
+    b = {
+        insert_order = {
+            sql = [[
+INSERT INTO orders (id, customer_id, status, created_on, updated_on)
+VALUES (UUID(), ?, ?, NOW(), NOW())
+]],
+            binds = {
+                {sysbench.sql.type.CHAR, 36},
+                {sysbench.sql.type.VARCHAR, 20}
+            }
+        }
+    },
+    c = {
+        insert_order = {
+            sql = [[
+INSERT INTO orders (id, customer_id, status, created_on, updated_on)
+VALUES (NULL, ?, ?, NOW(), NOW())
+]],
+            binds = {
+                sysbench.sql.type.INT,
+                {sysbench.sql.type.VARCHAR, 20}
+            }
+        }
     }
 }
 
@@ -474,17 +512,38 @@ function _get_random_customer_batch(schema_design)
     return customer_ids
 end
 
-function _populate_orders(schema_design, num_needed)
-    local orders_query = _insert_queries[schema_design]['orders']
-    local orders_stmt = con:prepare(orders_query)
-    local customer_param
-    if schema_design ~= "b" then
-        customer_param = orders_stmt:bind_create(sysbench.sql.type.INT)
-    else
-        customer_param = orders_stmt:bind_create(sysbench.sql.type.CHAR, 36)
+-- Creates the prepared statement for the schema design and named statement by
+-- looking in the statements table variable and binding parameters described
+-- for the named statement to the prepared statement pointer. Returns the table
+-- object containing a "statement" key containing the prepared statement
+-- pointer and a "params" array of bound parameter pointers
+function _prepare_statement(schema_design, stmt_name)
+    stmt_tbl = statements[schema_design][stmt_name]
+    assert(stmt_tbl ~= nil)
+    stmt = con:prepare(stmt_tbl.sql)
+    if table.maxn(stmt_tbl.binds) then
+        stmt_tbl.params = {}
     end
-    local status_param = orders_stmt:bind_create(sysbench.sql.type.VARCHAR, 20)
-    orders_stmt:bind_param(customer_param, status_param)
+    for idx, bind in ipairs(stmt_tbl.binds) do
+        if type(bind) ~= "table" then
+            -- Convenience, allows us to have non-array bind parameter
+            -- descriptors in the statements table
+            bind = {bind}
+        end
+        param = stmt:bind_create(unpack(bind))
+        stmt_tbl.params[idx] = param
+    end
+    if table.maxn(stmt_tbl.binds) then
+        stmt:bind_param(unpack(stmt_tbl.params))
+    end
+    statements[schema_design][stmt_name].statement = stmt
+    return stmt_tbl
+end
+
+function _populate_orders(schema_design, num_needed)
+    orders_stmt_tbl = _prepare_statement(schema_design, 'insert_order')
+    orders_stmt = orders_stmt_tbl.statement
+    orders_stmt_params = orders_stmt_tbl.params
 
     local batch_n = 1000
     local created_n = 0
@@ -493,14 +552,13 @@ function _populate_orders(schema_design, num_needed)
         if table.maxn(customers) == 0 then
             break
         end
-        for cidx, customer_id in ipairs(customers) do
+        for cidx, customer in ipairs(customers) do
             local status = _create_order_status()
             if schema_design ~= "b" then
-                customer_param:set(tonumber(customer_id))
-            else
-                customer_param:set(customer_id)
+                customer = tonumber(customer)
             end
-            status_param:set(status)
+            orders_stmt_params[1]:set(customer)
+            orders_stmt_params[2]:set(status)
             created_n = created_n + 1
             num_needed = num_needed - 1
             orders_stmt:execute()
