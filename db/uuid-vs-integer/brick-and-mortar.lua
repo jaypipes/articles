@@ -3,6 +3,9 @@ if sysbench.cmdline.command == nil then
           "cleanup, help")
 end
 
+-- TODO(jaypipes): Replace with C/FFI-based UUID generation
+local uuid = require('db/uuid-vs-integer/uuid')
+
 sysbench.cmdline.options = {
     schema_design =
         {"Schema design to benchmark", "a"},
@@ -321,9 +324,10 @@ ORDER BY o.created_on DESC
         insert_order = {
             sql = [[
 INSERT INTO orders (uuid, customer_uuid, status, created_on, updated_on)
-VALUES (UUID(), ?, ?, NOW(), NOW())
+VALUES (?, ?, ?, NOW(), NOW())
 ]],
             binds = {
+                {sysbench.sql.type.CHAR, 36},
                 {sysbench.sql.type.CHAR, 36},
                 {sysbench.sql.type.VARCHAR, 20}
             }
@@ -347,9 +351,10 @@ ORDER BY o.created_on DESC
         insert_order = {
             sql = [[
 INSERT INTO orders (id, uuid, customer_id, status, created_on, updated_on)
-VALUES (NULL, UUID(), ?, ?, NOW(), NOW())
+VALUES (NULL, ?, ?, ?, NOW(), NOW())
 ]],
             binds = {
+                {sysbench.sql.type.CHAR, 36},
                 sysbench.sql.type.INT,
                 {sysbench.sql.type.VARCHAR, 20}
             }
@@ -615,8 +620,15 @@ function _populate_orders(num_needed)
             if schema_design ~= "b" then
                 customer = tonumber(customer)
             end
-            orders_stmt_params[1]:set(customer)
-            orders_stmt_params[2]:set(status)
+            if schema_design == "a" then
+                orders_stmt_params[1]:set(customer)
+                orders_stmt_params[2]:set(status)
+            else
+                local order_id = uuid.new()
+                orders_stmt_params[1]:set(order_id)
+                orders_stmt_params[2]:set(customer)
+                orders_stmt_params[3]:set(status)
+            end
             created_n = created_n + 1
             num_needed = num_needed - 1
             orders_stmt:execute()
