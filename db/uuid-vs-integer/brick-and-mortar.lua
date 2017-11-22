@@ -3,23 +3,28 @@ if sysbench.cmdline.command == nil then
           "cleanup, help")
 end
 
+-- TODO(jaypipes): Replace with C/FFI-based UUID generation
+local uuid = require('db/uuid-vs-integer/uuid')
+
 sysbench.cmdline.options = {
     schema_design =
         {"Schema design to benchmark", "a"},
+    scenario =
+        {"Scenario to benchmark", "customer_new_order"},
     num_products =
         {"Number of products to create", 1000},
     num_suppliers =
         {"Number of suppliers to create", 1000},
     num_customers =
-        {"Number of customers to create", 10000},
+        {"Number of customers to create", 5000},
     num_inventories =
         {"Number of inventory records create", 30000},
     num_orders =
-        {"Number of orders to create", 40000},
+        {"Number of orders to create", 10000},
     min_order_items =
         {"Min number of order items to create for an order", 1},
     max_order_items =
-        {"Max number of order items to create for an order", 100},
+        {"Max number of order items to create for an order", 10},
 }
 
 -- Nested table of schema design to table name to the CREATE TABLE statement to
@@ -302,6 +307,18 @@ VALUES (NULL, ?, ?, NOW(), NOW())
                 {sysbench.sql.type.VARCHAR, 20}
             }
         },
+        insert_order_detail = {
+            sql = [[
+INSERT INTO order_details (order_id, product_id, fulfilling_supplier_id, amount)
+VALUES (?, ?, ?, ?)
+]],
+            binds = {
+                sysbench.sql.type.INT,
+                sysbench.sql.type.INT,
+                sysbench.sql.type.INT,
+                sysbench.sql.type.INT
+            }
+        },
         select_orders_by_customer = {
             sql = [[
 SELECT o.id, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.amount) AS total_amount
@@ -321,11 +338,24 @@ ORDER BY o.created_on DESC
         insert_order = {
             sql = [[
 INSERT INTO orders (uuid, customer_uuid, status, created_on, updated_on)
-VALUES (UUID(), ?, ?, NOW(), NOW())
+VALUES (?, ?, ?, NOW(), NOW())
 ]],
             binds = {
                 {sysbench.sql.type.CHAR, 36},
+                {sysbench.sql.type.CHAR, 36},
                 {sysbench.sql.type.VARCHAR, 20}
+            }
+        },
+        insert_order_detail = {
+            sql = [[
+INSERT INTO order_details (order_uuid, product_uuid, fulfilling_supplier_uuid, amount)
+VALUES (?, ?, ?, ?)
+]],
+            binds = {
+                {sysbench.sql.type.CHAR, 36},
+                {sysbench.sql.type.CHAR, 36},
+                {sysbench.sql.type.CHAR, 36},
+                sysbench.sql.type.INT
             }
         },
         select_orders_by_customer = {
@@ -347,11 +377,24 @@ ORDER BY o.created_on DESC
         insert_order = {
             sql = [[
 INSERT INTO orders (id, uuid, customer_id, status, created_on, updated_on)
-VALUES (NULL, UUID(), ?, ?, NOW(), NOW())
+VALUES (NULL, ?, ?, ?, NOW(), NOW())
+]],
+            binds = {
+                {sysbench.sql.type.CHAR, 36},
+                sysbench.sql.type.INT,
+                {sysbench.sql.type.VARCHAR, 20}
+            }
+        },
+        insert_order_detail = {
+            sql = [[
+INSERT INTO order_details (order_id, product_id, fulfilling_supplier_id, amount)
+VALUES (?, ?, ?, ?)
 ]],
             binds = {
                 sysbench.sql.type.INT,
-                {sysbench.sql.type.VARCHAR, 20}
+                sysbench.sql.type.INT,
+                sysbench.sql.type.INT,
+                sysbench.sql.type.INT
             }
         },
         select_orders_by_customer = {
@@ -402,6 +445,26 @@ LIMIT 50
 SELECT c.id FROM customers AS c
 ORDER BY RAND()
 LIMIT 100
+]],
+        random_product_supplier_batch = [[
+SELECT product_id, supplier_id
+FROM inventories AS i
+ORDER BY RAND()
+LIMIT 200
+]],
+        fulfiller_for_product = [[
+SELECT i.supplier_id
+FROM inventories AS i
+WHERE i.product_id = %d
+ORDER BY i.total DESC
+LIMIT 1
+]],
+        products_for_order = [[
+SELECT i.product_id
+FROM inventories AS i
+GROUP BY i.product_id
+ORDER BY RAND()
+LIMIT %d
 ]]
     },
     b = {
@@ -432,6 +495,26 @@ LIMIT 50
 SELECT c.uuid FROM customers AS c
 ORDER BY RAND()
 LIMIT 100
+]],
+        random_product_supplier_batch = [[
+SELECT product_uuid, supplier_uuid
+FROM inventories AS i
+ORDER BY RAND()
+LIMIT 200
+]],
+        fulfiller_for_product = [[
+SELECT i.supplier_uuid
+FROM inventories AS i
+WHERE i.product_uuid = '%s'
+ORDER BY i.total DESC
+LIMIT 1
+]],
+        products_for_order = [[
+SELECT i.product_uuid
+FROM inventories AS i
+GROUP BY i.product_uuid
+ORDER BY RAND()
+LIMIT %d
 ]]
     },
     c = {
@@ -462,6 +545,31 @@ LIMIT 50
 SELECT c.uuid FROM customers AS c
 ORDER BY RAND()
 LIMIT 100
+]],
+        random_product_supplier_batch = [[
+SELECT product_id, supplier_id
+FROM inventories AS i
+ORDER BY RAND()
+LIMIT 200
+]],
+        fulfiller_for_product = [[
+SELECT i.supplier_id
+FROM inventories AS i
+WHERE i.product_id = %d
+ORDER BY i.total DESC
+LIMIT 1
+]],
+        products_for_order = [[
+SELECT i.product_id
+FROM inventories AS i
+GROUP BY i.product_id
+ORDER BY RAND()
+LIMIT %d
+]],
+        customer_internal_from_external = [[
+SELECT c.id
+FROM customers AS c
+WHERE c.uuid = '%s'
 ]]
     }
 }
@@ -561,13 +669,36 @@ end
 -- so we should be OK
 function _get_random_customer_batch()
     local query = _select_queries[schema_design]['random_customer_batch']
-    rs = con:query(query)
-    customer_ids = {}
+    local rs = con:query(query)
+    local customers = {}
     for i = 1, rs.nrows do
         row = rs:fetch_row()
-        table.insert(customer_ids, row[1])
+        customer = row[1]
+        if schema_design ~= "b" then
+            customer = tonumber(customer)
+        end
+        table.insert(customers, customer)
     end
-    return customer_ids
+    return customers
+end
+
+-- Get a batch of random product and supplier identifier pairs. Used when
+-- creating a bunch of order details for customers during the prepare stage
+function _get_random_product_supplier_batch()
+    local query = _select_queries[schema_design]['random_product_supplier_batch']
+    local rs = con:query(query)
+    local product_suppliers = {}
+    for i = 1, rs.nrows do
+        row = rs:fetch_row()
+        product = row[1]
+        supplier = row[2]
+        if schema_design ~= "b" then
+            product = tonumber(product)
+            supplier = tonumber(supplier)
+        end
+        table.insert(product_suppliers, {product, supplier})
+    end
+    return product_suppliers
 end
 
 -- Creates the prepared statement for the schema design and named statement by
@@ -599,31 +730,83 @@ function _prepare_statement(stmt_name)
 end
 
 function _populate_orders(num_needed)
-    orders_stmt_tbl = _prepare_statement('insert_order')
-    orders_stmt = orders_stmt_tbl.statement
-    orders_stmt_params = orders_stmt_tbl.params
+    order_stmt_tbl = _prepare_statement('insert_order')
+    order_stmt = order_stmt_tbl.statement
+    order_stmt_params = order_stmt_tbl.params
+    order_detail_stmt_tbl = _prepare_statement('insert_order_detail')
+    order_detail_stmt = order_detail_stmt_tbl.statement
+    order_detail_stmt_params = order_detail_stmt_tbl.params
 
-    local batch_n = 1000
-    local created_n = 0
+    local created_orders = 0
+    local created_order_details = 0
     while num_needed > 0 do
         local customers = _get_random_customer_batch()
         if table.maxn(customers) == 0 then
             break
         end
+        local product_suppliers = _get_random_product_supplier_batch()
+        if table.maxn(product_suppliers) == 0 then
+            break
+        end
+        local max_products = table.maxn(product_suppliers)
         for cidx, customer in ipairs(customers) do
             local status = _create_order_status()
-            if schema_design ~= "b" then
-                customer = tonumber(customer)
+            local order_id = nil
+            if schema_design == "a" then
+                order_stmt_params[1]:set(customer)
+                order_stmt_params[2]:set(status)
+            else
+                order_id = uuid.new()
+                order_stmt_params[1]:set(order_id)
+                order_stmt_params[2]:set(customer)
+                order_stmt_params[3]:set(status)
             end
-            orders_stmt_params[1]:set(customer)
-            orders_stmt_params[2]:set(status)
-            created_n = created_n + 1
+            created_orders = created_orders + 1
             num_needed = num_needed - 1
-            orders_stmt:execute()
+            order_stmt:execute()
+
+            if schema_design ~= "b" then
+                order_id = con:query_row("SELECT LAST_INSERT_ID()")
+                order_id = tonumber(order_id)
+            end
+
+            -- Now add some items to the order as order_details records
+            local num_items = sysbench.rand.uniform(sysbench.opt.min_order_items, sysbench.opt.max_order_items)
+            local products_in_order = {}
+            local circuit_breaker = 1
+            repeat
+                -- Grab a random product/supplier combo and generate a random
+                -- quantity of items
+                local selected = sysbench.rand.uniform(1, max_products)
+                local amount = sysbench.rand.uniform(1, 100)
+                local product = product_suppliers[selected][1]
+                local supplier = product_suppliers[selected][2]
+                -- Make sure we haven't added an item with this product before...
+                local already_in_order = false
+                for idx, p in ipairs(products_in_order) do
+                    if product == p then
+                        already_in_order = true
+                    end
+                end
+                if not already_in_order then
+                    table.insert(products_in_order, product)
+                    order_detail_stmt_params[1]:set(order_id)
+                    order_detail_stmt_params[2]:set(product)
+                    order_detail_stmt_params[3]:set(supplier)
+                    order_detail_stmt_params[4]:set(amount)
+                    order_detail_stmt:execute()
+                    created_order_details = created_order_details + 1
+                end
+                -- A little infinite loop safety....
+                circuit_breaker = circuit_breaker + 1
+                if circuit_breaker > (num_items + 50) then
+                    break
+                end
+            until table.maxn(products_in_order) == num_items
         end
     end
-    if created_n > 0 then
-        print(string.format("PREPARE: created %d order records.", created_n))
+    if created_orders > 0 then
+        print(string.format("PREPARE: created %d order records with %d details.", created_orders, created_order_details))
     end
 end
 
@@ -801,14 +984,25 @@ end
 
 function thread_init()
     _init()
+    -- uuid.new() isn't thread-safe -- it creates the same set of UUIDs in
+    -- order for each thread -- so we trick it into creating a "new" UUID by
+    -- creating a new fake MAC address per thread
+    thread_mac = sysbench.rand.string('##:##:##:##:##:##')
+    scenario = sysbench.opt.scenario
     customers = _get_customer_external_ids()
-    scenario_stmts = _prepare_scenario('lookup_orders_by_customer')
+    scenario_stmts = _prepare_scenario(scenario)
 end
 
 scenarios = {
     lookup_orders_by_customer = {
         statements = {
             'select_orders_by_customer'
+        }
+    },
+    customer_new_order = {
+        statements = {
+            'insert_order',
+            'insert_order_detail'
         }
     }
 }
@@ -832,9 +1026,94 @@ function _prepare_scenario(scenario)
     return scenario_stmts
 end
 
-function execute_scenario()
-    selected = sysbench.rand.uniform(1, table.maxn(customers))
-    customer = customers[selected]
+-- Returns a supplier internal identifier that will fulfill the supplied
+-- external product identifier
+function get_fulfiller_for_product(product)
+    local query = _select_queries[schema_design]['fulfiller_for_product']
+    query = string.format(query, product)
+    local supplier = con:query_row(query)
+    if schema_design ~= "b" then
+        supplier = tonumber(supplier)
+    end
+    return supplier
+end
+
+-- Returns a number of random product external identifiers. Meant to simulate a
+-- customer selecting some number of items to purchase through the store and
+-- needing to supply those external product identifiers to the order system for
+-- processing the order details.
+function get_products_for_order(num_products)
+    local query = _select_queries[schema_design]['products_for_order']
+    query = string.format(query, num_products)
+    local rs = con:query(query)
+    local products = {}
+    for i = 1, rs.nrows do
+        local row = rs:fetch_row()
+        local product = row[1]
+        if schema_design ~= "b" then
+            product = tonumber(product)
+        end
+        table.insert(products, product)
+    end
+    return products
+end
+
+-- Returns the internal customer ID from the external customer ID
+function get_customer_internal_from_external(external)
+    local query = _select_queries[schema_design]['customer_internal_from_external']
+    query = string.format(query, external)
+    local internal = con:query_row(query)
+    if schema_design == "c" then
+        internal = tonumber(internal)
+    end
+    return internal
+end
+
+-- Creates a single order for the supplied customer external ID and array of
+-- external product IDs. A random quantity of each product is ordered.
+function customer_new_order(customer, products, order_uuid)
+    local ins_order = scenario_stmts[1]
+    local ins_order_det = scenario_stmts[2]
+
+    local status = _create_order_status()
+    local order_id = nil
+    local customer_id = customer
+    if schema_design == "a" then
+        ins_order.params[1]:set(customer_id)
+        ins_order.params[2]:set(status)
+    else
+        order_id = uuid.new(thread_mac)
+        -- For schema design "c", the tradeoff is we need to do a secondary key
+        -- lookup on the external customer UUID to get the internal customer ID
+        if schema_design == "c" then
+            customer_id = get_customer_internal_from_external(customer)
+        end
+        ins_order.params[1]:set(order_id)
+        ins_order.params[2]:set(customer_id)
+        ins_order.params[3]:set(status)
+    end
+
+    ins_order.statement:execute()
+
+    if schema_design ~= "b" then
+        order_id = con:query_row("SELECT LAST_INSERT_ID()")
+        order_id = tonumber(order_id)
+    end
+
+    for idx, product in ipairs(products) do
+        local amount = sysbench.rand.uniform(1, 100)
+        local supplier = get_fulfiller_for_product(product)
+        ins_order_det.params[1]:set(order_id)
+        ins_order_det.params[2]:set(product)
+        ins_order_det.params[3]:set(supplier)
+        ins_order_det.params[4]:set(amount)
+        ins_order_det.statement:execute()
+    end
+end
+
+function execute_lookup_orders_by_customer()
+    local selected = sysbench.rand.uniform(1, table.maxn(customers))
+    local customer = customers[selected]
     if schema_design == "a" then
         customer = tonumber(customer)
     end
@@ -845,8 +1124,23 @@ function execute_scenario()
     end
 end
 
+function execute_customer_new_order()
+    local selected = sysbench.rand.uniform(1, table.maxn(customers))
+    local customer = customers[selected]
+    if schema_design == "a" then
+        customer = tonumber(customer)
+    end
+    local num_items = sysbench.rand.uniform(sysbench.opt.min_order_items, sysbench.opt.max_order_items)
+    local products = get_products_for_order(num_items)
+    customer_new_order(customer, products)
+end
+
 function event()
-    execute_scenario()
+    if scenario == 'lookup_orders_by_customer' then
+        execute_lookup_orders_by_customer()
+    elseif scenario == 'customer_new_order' then
+        execute_customer_new_order()
+    end
 end
 
 function thread_done()
