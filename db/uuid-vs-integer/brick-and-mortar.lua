@@ -688,7 +688,8 @@ function _populate_orders(num_needed)
     order_detail_stmt = order_detail_stmt_tbl.statement
     order_detail_stmt_params = order_detail_stmt_tbl.params
 
-    local created_n = 0
+    local created_orders = 0
+    local created_order_details = 0
     while num_needed > 0 do
         local customers = _get_random_customer_batch()
         if table.maxn(customers) == 0 then
@@ -711,7 +712,7 @@ function _populate_orders(num_needed)
                 order_stmt_params[2]:set(customer)
                 order_stmt_params[3]:set(status)
             end
-            created_n = created_n + 1
+            created_orders = created_orders + 1
             num_needed = num_needed - 1
             order_stmt:execute()
 
@@ -723,35 +724,40 @@ function _populate_orders(num_needed)
             -- Now add some items to the order as order_details records
             local num_items = sysbench.rand.uniform(sysbench.opt.min_order_items, sysbench.opt.max_order_items)
             local products_in_order = {}
-            for i = 1, num_items do
+            local circuit_breaker = 1
+            repeat
                 -- Grab a random product/supplier combo and generate a random
                 -- quantity of items
-                local unique = true
-                while unique do
-                    -- Make sure we haven't added an item with this product before...
-                    local selected = sysbench.rand.uniform(1, max_products)
-                    local amount = sysbench.rand.uniform(1, 100)
-                    local product = product_suppliers[selected][1]
-                    local supplier = product_suppliers[selected][2]
-                    for idx, p in ipairs(products_in_order) do
-                        if product == p then
-                            unique = false
-                        end
-                    end
-                    if unique then
-                        table.insert(products_in_order, product)
-                        order_detail_stmt_params[1]:set(order_id)
-                        order_detail_stmt_params[2]:set(product)
-                        order_detail_stmt_params[3]:set(supplier)
-                        order_detail_stmt_params[4]:set(amount)
-                        order_detail_stmt:execute()
+                local selected = sysbench.rand.uniform(1, max_products)
+                local amount = sysbench.rand.uniform(1, 100)
+                local product = product_suppliers[selected][1]
+                local supplier = product_suppliers[selected][2]
+                -- Make sure we haven't added an item with this product before...
+                local already_in_order = false
+                for idx, p in ipairs(products_in_order) do
+                    if product == p then
+                        already_in_order = true
                     end
                 end
-            end
+                if not already_in_order then
+                    table.insert(products_in_order, product)
+                    order_detail_stmt_params[1]:set(order_id)
+                    order_detail_stmt_params[2]:set(product)
+                    order_detail_stmt_params[3]:set(supplier)
+                    order_detail_stmt_params[4]:set(amount)
+                    order_detail_stmt:execute()
+                    created_order_details = created_order_details + 1
+                end
+                -- A little infinite loop safety....
+                circuit_breaker = circuit_breaker + 1
+                if circuit_breaker > (num_items + 50) then
+                    break
+                end
+            until table.maxn(products_in_order) == num_items
         end
     end
-    if created_n > 0 then
-        print(string.format("PREPARE: created %d order records.", created_n))
+    if created_orders > 0 then
+        print(string.format("PREPARE: created %d order records with %d details.", created_orders, created_order_details))
     end
 end
 
