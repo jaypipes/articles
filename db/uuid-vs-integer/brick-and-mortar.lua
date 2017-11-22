@@ -9,6 +9,8 @@ local uuid = require('db/uuid-vs-integer/uuid')
 sysbench.cmdline.options = {
     schema_design =
         {"Schema design to benchmark", "a"},
+    scenario =
+        {"Scenario to benchmark", "customer_new_order"},
     num_products =
         {"Number of products to create", 1000},
     num_suppliers =
@@ -449,6 +451,20 @@ SELECT product_id, supplier_id
 FROM inventories AS i
 ORDER BY RAND()
 LIMIT 200
+]],
+        fulfiller_for_product = [[
+SELECT i.supplier_id
+FROM inventories AS i
+WHERE i.product_id = %d
+ORDER BY i.total DESC
+LIMIT 1
+]],
+        products_for_order = [[
+SELECT i.product_id
+FROM inventories AS i
+GROUP BY i.product_id
+ORDER BY RAND()
+LIMIT %d
 ]]
     },
     b = {
@@ -485,6 +501,20 @@ SELECT product_uuid, supplier_uuid
 FROM inventories AS i
 ORDER BY RAND()
 LIMIT 200
+]],
+        fulfiller_for_product = [[
+SELECT i.supplier_uuid
+FROM inventories AS i
+WHERE i.product_uuid = '%s'
+ORDER BY i.total DESC
+LIMIT 1
+]],
+        products_for_order = [[
+SELECT i.product_uuid
+FROM inventories AS i
+GROUP BY i.product_uuid
+ORDER BY RAND()
+LIMIT %d
 ]]
     },
     c = {
@@ -521,6 +551,25 @@ SELECT product_id, supplier_id
 FROM inventories AS i
 ORDER BY RAND()
 LIMIT 200
+]],
+        fulfiller_for_product = [[
+SELECT i.supplier_id
+FROM inventories AS i
+WHERE i.product_id = %d
+ORDER BY i.total DESC
+LIMIT 1
+]],
+        products_for_order = [[
+SELECT i.product_id
+FROM inventories AS i
+GROUP BY i.product_id
+ORDER BY RAND()
+LIMIT %d
+]],
+        customer_internal_from_external = [[
+SELECT c.id
+FROM customers AS c
+WHERE c.uuid = '%s'
 ]]
     }
 }
@@ -935,14 +984,25 @@ end
 
 function thread_init()
     _init()
+    -- uuid.new() isn't thread-safe -- it creates the same set of UUIDs in
+    -- order for each thread -- so we trick it into creating a "new" UUID by
+    -- creating a new fake MAC address per thread
+    thread_mac = sysbench.rand.string('##:##:##:##:##:##')
+    scenario = sysbench.opt.scenario
     customers = _get_customer_external_ids()
-    scenario_stmts = _prepare_scenario('lookup_orders_by_customer')
+    scenario_stmts = _prepare_scenario(scenario)
 end
 
 scenarios = {
     lookup_orders_by_customer = {
         statements = {
             'select_orders_by_customer'
+        }
+    },
+    customer_new_order = {
+        statements = {
+            'insert_order',
+            'insert_order_detail'
         }
     }
 }
@@ -966,9 +1026,94 @@ function _prepare_scenario(scenario)
     return scenario_stmts
 end
 
-function execute_scenario()
-    selected = sysbench.rand.uniform(1, table.maxn(customers))
-    customer = customers[selected]
+-- Returns a supplier internal identifier that will fulfill the supplied
+-- external product identifier
+function get_fulfiller_for_product(product)
+    local query = _select_queries[schema_design]['fulfiller_for_product']
+    query = string.format(query, product)
+    local supplier = con:query_row(query)
+    if schema_design ~= "b" then
+        supplier = tonumber(supplier)
+    end
+    return supplier
+end
+
+-- Returns a number of random product external identifiers. Meant to simulate a
+-- customer selecting some number of items to purchase through the store and
+-- needing to supply those external product identifiers to the order system for
+-- processing the order details.
+function get_products_for_order(num_products)
+    local query = _select_queries[schema_design]['products_for_order']
+    query = string.format(query, num_products)
+    local rs = con:query(query)
+    local products = {}
+    for i = 1, rs.nrows do
+        local row = rs:fetch_row()
+        local product = row[1]
+        if schema_design ~= "b" then
+            product = tonumber(product)
+        end
+        table.insert(products, product)
+    end
+    return products
+end
+
+-- Returns the internal customer ID from the external customer ID
+function get_customer_internal_from_external(external)
+    local query = _select_queries[schema_design]['customer_internal_from_external']
+    query = string.format(query, external)
+    local internal = con:query_row(query)
+    if schema_design == "c" then
+        internal = tonumber(internal)
+    end
+    return internal
+end
+
+-- Creates a single order for the supplied customer external ID and array of
+-- external product IDs. A random quantity of each product is ordered.
+function customer_new_order(customer, products, order_uuid)
+    local ins_order = scenario_stmts[1]
+    local ins_order_det = scenario_stmts[2]
+
+    local status = _create_order_status()
+    local order_id = nil
+    local customer_id = customer
+    if schema_design == "a" then
+        ins_order.params[1]:set(customer_id)
+        ins_order.params[2]:set(status)
+    else
+        order_id = uuid.new(thread_mac)
+        -- For schema design "c", the tradeoff is we need to do a secondary key
+        -- lookup on the external customer UUID to get the internal customer ID
+        if schema_design == "c" then
+            customer_id = get_customer_internal_from_external(customer)
+        end
+        ins_order.params[1]:set(order_id)
+        ins_order.params[2]:set(customer_id)
+        ins_order.params[3]:set(status)
+    end
+
+    ins_order.statement:execute()
+
+    if schema_design ~= "b" then
+        order_id = con:query_row("SELECT LAST_INSERT_ID()")
+        order_id = tonumber(order_id)
+    end
+
+    for idx, product in ipairs(products) do
+        local amount = sysbench.rand.uniform(1, 100)
+        local supplier = get_fulfiller_for_product(product)
+        ins_order_det.params[1]:set(order_id)
+        ins_order_det.params[2]:set(product)
+        ins_order_det.params[3]:set(supplier)
+        ins_order_det.params[4]:set(amount)
+        ins_order_det.statement:execute()
+    end
+end
+
+function execute_lookup_orders_by_customer()
+    local selected = sysbench.rand.uniform(1, table.maxn(customers))
+    local customer = customers[selected]
     if schema_design == "a" then
         customer = tonumber(customer)
     end
@@ -979,8 +1124,23 @@ function execute_scenario()
     end
 end
 
+function execute_customer_new_order()
+    local selected = sysbench.rand.uniform(1, table.maxn(customers))
+    local customer = customers[selected]
+    if schema_design == "a" then
+        customer = tonumber(customer)
+    end
+    local num_items = sysbench.rand.uniform(sysbench.opt.min_order_items, sysbench.opt.max_order_items)
+    local products = get_products_for_order(num_items)
+    customer_new_order(customer, products)
+end
+
 function event()
-    execute_scenario()
+    if scenario == 'lookup_orders_by_customer' then
+        execute_lookup_orders_by_customer()
+    elseif scenario == 'customer_new_order' then
+        execute_customer_new_order()
+    end
 end
 
 function thread_done()
