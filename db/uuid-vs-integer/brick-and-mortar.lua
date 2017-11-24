@@ -332,6 +332,21 @@ ORDER BY o.created_on DESC
             binds = {
                 sysbench.sql.type.INT
             }
+        },
+        select_most_popular_product_suppliers = {
+            sql = [[
+SELECT p.name, s.name, COUNT(DISTINCT o.id) AS included_in_orders, SUM(od.amount) AS total_purchased
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+JOIN products AS p
+ ON od.product_id = p.id
+JOIN suppliers AS s
+ ON od.fulfilling_supplier_id = s.id
+GROUP BY p.id, s.id
+ORDER BY COUNT(DISTINCT o.id) DESC
+LIMIT 100
+]]
         }
     },
     b = {
@@ -371,6 +386,21 @@ ORDER BY o.created_on DESC
             binds = {
                 {sysbench.sql.type.CHAR, 36},
             }
+        },
+        select_most_popular_product_suppliers = {
+            sql = [[
+SELECT p.name, s.name, COUNT(DISTINCT o.uuid) AS included_in_orders, SUM(od.amount) AS total_purchased
+FROM orders AS o
+JOIN order_details AS od
+ ON o.uuid = od.order_uuid
+JOIN products AS p
+ ON od.product_uuid = p.uuid
+JOIN suppliers AS s
+ ON od.fulfilling_supplier_uuid = s.uuid
+GROUP BY p.uuid, s.uuid
+ORDER BY COUNT(DISTINCT o.uuid) DESC
+LIMIT 100
+]]
         }
     },
     c = {
@@ -412,6 +442,21 @@ ORDER BY o.created_on DESC
             binds = {
                 {sysbench.sql.type.CHAR, 36},
             }
+        },
+        select_most_popular_product_suppliers = {
+            sql = [[
+SELECT p.name, s.name, COUNT(DISTINCT o.id) AS included_in_orders, SUM(od.amount) AS total_purchased
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+JOIN products AS p
+ ON od.product_id = p.id
+JOIN suppliers AS s
+ ON od.fulfilling_supplier_id = s.id
+GROUP BY p.id, s.id
+ORDER BY COUNT(DISTINCT o.id) DESC
+LIMIT 100
+]]
         }
     }
 }
@@ -710,19 +755,17 @@ function _prepare_statement(stmt_name)
     stmt_tbl = statements[schema_design][stmt_name]
     assert(stmt_tbl ~= nil)
     stmt = con:prepare(stmt_tbl.sql)
-    if table.maxn(stmt_tbl.binds) then
+    if stmt_tbl.binds ~= nil and table.maxn(stmt_tbl.binds) then
         stmt_tbl.params = {}
-    end
-    for idx, bind in ipairs(stmt_tbl.binds) do
-        if type(bind) ~= "table" then
-            -- Convenience, allows us to have non-array bind parameter
-            -- descriptors in the statements table
-            bind = {bind}
+        for idx, bind in ipairs(stmt_tbl.binds) do
+            if type(bind) ~= "table" then
+                -- Convenience, allows us to have non-array bind parameter
+                -- descriptors in the statements table
+                bind = {bind}
+            end
+            param = stmt:bind_create(unpack(bind))
+            stmt_tbl.params[idx] = param
         end
-        param = stmt:bind_create(unpack(bind))
-        stmt_tbl.params[idx] = param
-    end
-    if table.maxn(stmt_tbl.binds) then
         stmt:bind_param(unpack(stmt_tbl.params))
     end
     statements[schema_design][stmt_name].statement = stmt
@@ -999,6 +1042,11 @@ scenarios = {
             'select_orders_by_customer'
         }
     },
+    popular_items = {
+        statements = {
+            'select_most_popular_product_suppliers'
+        }
+    },
     customer_new_order = {
         statements = {
             'insert_order',
@@ -1124,6 +1172,12 @@ function execute_lookup_orders_by_customer()
     end
 end
 
+function execute_popular_items()
+    for st_idx, stmt in ipairs(scenario_stmts) do
+        stmt.statement:execute()
+    end
+end
+
 function execute_customer_new_order()
     local selected = sysbench.rand.uniform(1, table.maxn(customers))
     local customer = customers[selected]
@@ -1138,6 +1192,8 @@ end
 function event()
     if scenario == 'lookup_orders_by_customer' then
         execute_lookup_orders_by_customer()
+    elseif scenario == 'popular_items' then
+        execute_popular_items()
     elseif scenario == 'customer_new_order' then
         execute_customer_new_order()
     end
