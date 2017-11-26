@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS order_details (
     amount INT NOT NULL,
     fulfilling_supplier_id INT NOT NULL,
     PRIMARY KEY (order_id, product_id),
-    KEY ix_product_id (product_id),
+    KEY ix_product_fulfilling_supplier_id (product_id, fulfilling_supplier_id),
     KEY ix_fulfilling_supplier_id (fulfilling_supplier_id)
 )
 ]]
@@ -173,7 +173,7 @@ CREATE TABLE IF NOT EXISTS order_details (
     amount INT NOT NULL,
     fulfilling_supplier_uuid VARCHAR(36) NOT NULL,
     PRIMARY KEY (order_uuid, product_uuid),
-    KEY ix_product_id (product_uuid),
+    KEY ix_product_fulfilling_supplier_uuid (product_uuid, fulfilling_supplier_uuid),
     KEY ix_fulfilling_supplier_uuid (fulfilling_supplier_uuid)
 )
 ]]
@@ -255,7 +255,7 @@ CREATE TABLE IF NOT EXISTS order_details (
     amount INT NOT NULL,
     fulfilling_supplier_id INT NOT NULL,
     PRIMARY KEY (order_id, product_id),
-    KEY ix_product_id (product_id),
+    KEY ix_product_fulfilling_supplier_id (product_id, fulfilling_supplier_id),
     KEY ix_fulfilling_supplier_id (fulfilling_supplier_id)
 )
 ]]
