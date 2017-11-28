@@ -329,7 +329,17 @@ end up being a full table scan of the `order_details`. I've specifically
 designed this query to show the impact that the choice of using UUID or
 auto-incrementing primary keys has on sequential read performance.
 
-## Database server configurations
+## Configuration
+
+### Platform configuration
+
+Some information about the hardware and platform used for the benchmarking:
+
+* Single-processor system with an Intel Core i7 CPU @ 3.33GHz - 6 cores, 12 threads
+* 24GB RAM
+* Running Linux kernel 4.8.0-59-generic
+
+### RDBMS configuration
 
 This article runs a series of tests against a set of open source database
 server configurations to see if there are noteworthy differences between the
@@ -340,10 +350,77 @@ The database server configurations we test are the following:
 * MySQL Server 5.7 with InnoDB storage engine
 * PostgreSQL 9.6
 
-### MySQL Server
+#### MySQL Server
 
 TODO
 
-### PostgreSQL
+#### PostgreSQL
 
 TODO
+
+## Benchmark results
+
+### brick-and-mortar store application
+
+Loaded the database with the following data:
+
+| Table                 | # Records  |
+| --------------------- | ---------: |
+| products              | 1,000      |
+| suppliers             | 1,000      |
+| inventories           | 32,000     |
+| product_price_history | 5,000      |
+| customers             | 5,000      |
+| orders                | 100,000    |
+| order_details         | 1,000,000  |
+
+#### `customer_new_order`
+
+Here are the number of transactions per second that were possible (for N
+concurrent threads) for the `customer_new_order` scenario. These transactions
+are the number of new customer orders (including all order details) that could
+be created per second. This event entails reads from a number of tables,
+including `products` and `product_price_history` as well as writes to multiple
+tables.
+
+| Schema design                     |                        TPS                             |
+| --------------------------------- | -------------------------------------------------------|
+|                                   |       1      |      2      |      4      |      8      |
+| --------------------------------- | -----------: | ----------: | ----------: | ----------: |
+| A (auto-increment PKs no UUID)    |        68.64 |      143.21 |      323.39 |      636.65 |
+| A (UUID PKs only)                 |        43.59 |       88.37 |      110.62 |      130.25 |
+| C (auto-increment PK, ext UUID)   |        68.41 |      135.00 |      330.45 |      668.90 |
+
+#### `lookup_orders_for_customer`
+
+Here are the number of transactions per second that were possible (for N
+concurrent threads) for the `lookup_orders_for_customer` scenario. These
+transactions were a single `SELECT` statement that returned the latest (by
+created_on date) orders for a customer, with the number of items in the order
+and the amount of the order. This `SELECT` statement involved a lookup via
+customer external identifier (either auto-incrementing integer key or UUID)
+along with an aggregate operation across a set of records in the
+`order_details` table via a multi-table `JOIN` operation.
+
+| Schema design                     |                        TPS                             |
+| --------------------------------- | -------------------------------------------------------|
+|                                   |       1      |      2      |      4      |      8      |
+| --------------------------------- | -----------: | ----------: | ----------: | ----------: |
+| A (auto-increment PKs no UUID)    |      1839.67 |     3801.40 |     7282.87 |    13749.21 |
+| A (UUID PKs only)                 |      1171.78 |     3032.59 |     4566.45 |     7019.56 |
+| C (auto-increment PK, ext UUID)   |      1708.24 |     3429.79 |     6926.87 |    12937.92 |
+
+#### `popular_items`
+
+Here are the number of transactions per second that were possible (for N
+concurrent threads) for the `popular_items` scenario. These
+transactions were a single `SELECT` statement that returned the most
+popular-selling items in the store and the supplier that fulfilled that product
+the most. It involves a full table scan of all records in the `order_details`
+table and `JOIN` operations to multiple tables including the `products` and
+`suppliers` tables.
+
+| Schema design                     |                        TPS                             |
+| --------------------------------- | -------------------------------------------------------|
+|                                   |       1      |      2      |      4      |      8      |
+| --------------------------------- | -----------: | ----------: | ----------: | ----------: |
