@@ -185,46 +185,149 @@ CREATE TABLE products (
 
 ## Application data patterns
 
-### Data-access patterns
+As mentioned above, I wanted to show the impact of these schema designs/choices
+in **real-world applications**. To that point, I developed a number benchmark
+scenarios that I thought represented some realistic data access and data write
+patterns.
+
+For the brick-and-mortar application, I came up with these scenarios:
+
+* `customer_new_order`
+* `lookup_orders_by_customer`
+* `popular_items`
+
+Following is an explanation of each scenario and the SQL statements from which
+the scenario is composed.
 
 * Single-table external key lookup
 * Multi-table external key lookup
 * Self-referential single-table lookup
 * Self-referential multi-table lookup
-
-#### Single-table external key lookup
-
-TODO
-
-#### Multi-table external key lookup
-
-TODO
-
-#### Self-referential single-table lookup
-
-TODO
-
-#### Self-referential multi-table lookup
-
-TODO
-
-### Data-write patterns
-
 * Batched INSERTs, minimal UPDATEs or DELETEs
 * Single-record INSERTs, UPDATEs, and DELETEs
 * Multi-table transactions
 
-#### Batched INSERTs, minimal UPDATEs or DELETEs
+### `customer_new_order`
 
-TODO
+The `customer_new_order` scenario comes from the brick-and-mortar application.
+It is intended to emulate a single customer making a purchase of items in the
+store.
 
-#### Single-record INSERTs, UPDATEs and DELETEs
+1. Look up some random products that have inventory at the store
+1. (Schema design "C" only) Look up the customer's internal ID from their
+   external UUID
+1. Begin a transaction
+1. Create an order record for the customer
+1. (Schema design "A" and "C" only) Get the newly-inserted internal ID of the
+   order
+1. For each selected product:
+    1. Look up a fulfilling supplier for the product
+    1. Look up the current price of the product
+    1. Create an order item record for the product and supplier on the order
+1. Commit the transaction
 
-TOOD
+This scenario is designed to stress both the `INSERT` performance for
+multi-table transactions as well as read performance on a table scan (since we
+purposely have no index used when ordering by `RAND()` when looking up products
+for the customer to purchase).
 
-#### Multi-table transactions
+For schema design "C", this also accurately stresses the impact of needing to
+do one additional "point select" query for grabbing the internal customer ID
+from the external customer UUID.
 
-TODO
+For schema designs "A" and "C", it also represents the need to perform an
+additional query to retrieve the newly-created order's auto-incrementing
+primary key before inserting order detail records. This step does not need to
+be done for schema design "B" since the UUID is generated ahead of order record
+creation.
+
+### `lookup_orders_by_customer`
+
+The `lookup_orders_by_customer` scenario comes from the brick-and-mortar
+application and is designed to emulate a query that would be run by a customer
+service representative when a customer comes into the store and needs to find
+some order information.
+
+This scenario only entails a single `SELECT` query, but the query is designed
+to stress a particular archetypal data access pattern: aggregating information
+across a set of columns in a child table used in a secondary index (product and
+supplier columns) while filtering records also on a secondary index in a parent
+table (customer).
+
+This query looks like this for schema design "A":
+
+```sql
+SELECT o.id, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+WHERE o.customer_id = ?
+GROUP BY o.id
+ORDER BY o.created_on DESC
+```
+
+for schema design "B", the query is as follows:
+
+```sql
+SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
+FROM orders AS o
+JOIN order_details AS od
+ ON o.uuid = od.order_uuid
+WHERE o.customer_uuid = ?
+GROUP BY o.uuid
+ORDER BY o.created_on DESC
+```
+
+and finally, for schema design "C", the query looks like this:
+
+```sql
+SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+JOIN customers AS c
+ ON o.customer_id = c.id
+WHERE c.uuid = ?
+GROUP BY o.id
+ORDER BY o.created_on DESC
+```
+
+Note that for schema design "C", since we use the UUID as the external
+identifier for the customer, we need to join to the `customers` table in order to
+query on the customer's UUID value. Since the UUID *is* the primary key in
+schema design "B" and the auto-incrementing integer *is* the primary key in
+schema design "A", those queries need not join to the `customers` table.
+
+### `popular_items`
+
+The `popular_items` scenario, from the brick-and-mortar application, includes a
+single `SELECT` statement that might be run by an extract-transform-load (ETL)
+tool or an online analytical processing (OLAP) program.
+
+For the general manager of our brick-and-mortar store, she might want to know
+which are the best-selling products and which suppliers are providing those
+products.
+
+The `SELECT` expression for this query looks like this:
+
+```sql
+SELECT p.name, s.name, COUNT(DISTINCT o.id) AS included_in_orders, SUM(od.quantity * od.price) AS total_purchased
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+JOIN products AS p
+ ON od.product_id = p.id
+JOIN suppliers AS s
+ ON od.fulfilling_supplier_id = s.id
+GROUP BY p.id, s.id
+ORDER BY COUNT(DISTINCT o.id) DESC
+LIMIT 100
+```
+
+Note that there is no `WHERE` clause on the above, which means that there will
+end up being a full table scan of the `order_details`. I've specifically
+designed this query to show the impact that the choice of using UUID or
+auto-incrementing primary keys has on sequential read performance.
 
 ## Database server configurations
 
