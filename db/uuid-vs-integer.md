@@ -185,48 +185,161 @@ CREATE TABLE products (
 
 ## Application data patterns
 
-### Data-access patterns
+As mentioned above, I wanted to show the impact of these schema designs/choices
+in **real-world applications**. To that point, I developed a number benchmark
+scenarios that I thought represented some realistic data access and data write
+patterns.
+
+For the brick-and-mortar application, I came up with these scenarios:
+
+* `customer_new_order`
+* `lookup_orders_by_customer`
+* `popular_items`
+
+Following is an explanation of each scenario and the SQL statements from which
+the scenario is composed.
 
 * Single-table external key lookup
 * Multi-table external key lookup
 * Self-referential single-table lookup
 * Self-referential multi-table lookup
-
-#### Single-table external key lookup
-
-TODO
-
-#### Multi-table external key lookup
-
-TODO
-
-#### Self-referential single-table lookup
-
-TODO
-
-#### Self-referential multi-table lookup
-
-TODO
-
-### Data-write patterns
-
 * Batched INSERTs, minimal UPDATEs or DELETEs
 * Single-record INSERTs, UPDATEs, and DELETEs
 * Multi-table transactions
 
-#### Batched INSERTs, minimal UPDATEs or DELETEs
+### `customer_new_order`
 
-TODO
+The `customer_new_order` scenario comes from the brick-and-mortar application.
+It is intended to emulate a single customer making a purchase of items in the
+store.
 
-#### Single-record INSERTs, UPDATEs and DELETEs
+1. Look up some random products that have inventory at the store
+1. (Schema design "C" only) Look up the customer's internal ID from their
+   external UUID
+1. Begin a transaction
+1. Create an order record for the customer
+1. (Schema design "A" and "C" only) Get the newly-inserted internal ID of the
+   order
+1. For each selected product:
+    1. Look up a fulfilling supplier for the product
+    1. Look up the current price of the product
+    1. Create an order item record for the product and supplier on the order
+1. Commit the transaction
 
-TOOD
+This scenario is designed to stress both the `INSERT` performance for
+multi-table transactions as well as read performance on a table scan (since we
+purposely have no index used when ordering by `RAND()` when looking up products
+for the customer to purchase).
 
-#### Multi-table transactions
+For schema design "C", this also accurately stresses the impact of needing to
+do one additional "point select" query for grabbing the internal customer ID
+from the external customer UUID.
 
-TODO
+For schema designs "A" and "C", it also represents the need to perform an
+additional query to retrieve the newly-created order's auto-incrementing
+primary key before inserting order detail records. This step does not need to
+be done for schema design "B" since the UUID is generated ahead of order record
+creation.
 
-## Database server configurations
+### `lookup_orders_by_customer`
+
+The `lookup_orders_by_customer` scenario comes from the brick-and-mortar
+application and is designed to emulate a query that would be run by a customer
+service representative when a customer comes into the store and needs to find
+some order information.
+
+This scenario only entails a single `SELECT` query, but the query is designed
+to stress a particular archetypal data access pattern: aggregating information
+across a set of columns in a child table used in a secondary index (product and
+supplier columns) while filtering records also on a secondary index in a parent
+table (customer).
+
+This query looks like this for schema design "A":
+
+```sql
+SELECT o.id, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+WHERE o.customer_id = ?
+GROUP BY o.id
+ORDER BY o.created_on DESC
+```
+
+for schema design "B", the query is as follows:
+
+```sql
+SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
+FROM orders AS o
+JOIN order_details AS od
+ ON o.uuid = od.order_uuid
+WHERE o.customer_uuid = ?
+GROUP BY o.uuid
+ORDER BY o.created_on DESC
+```
+
+and finally, for schema design "C", the query looks like this:
+
+```sql
+SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+JOIN customers AS c
+ ON o.customer_id = c.id
+WHERE c.uuid = ?
+GROUP BY o.id
+ORDER BY o.created_on DESC
+```
+
+Note that for schema design "C", since we use the UUID as the external
+identifier for the customer, we need to join to the `customers` table in order to
+query on the customer's UUID value. Since the UUID *is* the primary key in
+schema design "B" and the auto-incrementing integer *is* the primary key in
+schema design "A", those queries need not join to the `customers` table.
+
+### `popular_items`
+
+The `popular_items` scenario, from the brick-and-mortar application, includes a
+single `SELECT` statement that might be run by an extract-transform-load (ETL)
+tool or an online analytical processing (OLAP) program.
+
+For the general manager of our brick-and-mortar store, she might want to know
+which are the best-selling products and which suppliers are providing those
+products.
+
+The `SELECT` expression for this query looks like this:
+
+```sql
+SELECT p.name, s.name, COUNT(DISTINCT o.id) AS included_in_orders, SUM(od.quantity * od.price) AS total_purchased
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+JOIN products AS p
+ ON od.product_id = p.id
+JOIN suppliers AS s
+ ON od.fulfilling_supplier_id = s.id
+GROUP BY p.id, s.id
+ORDER BY COUNT(DISTINCT o.id) DESC
+LIMIT 100
+```
+
+Note that there is no `WHERE` clause on the above, which means that there will
+end up being a full table scan of the `order_details`. I've specifically
+designed this query to show the impact that the choice of using UUID or
+auto-incrementing primary keys has on sequential read performance.
+
+## Configuration
+
+### Platform configuration
+
+Some information about the hardware and platform used for the benchmarking:
+
+* Single-processor system with an Intel Core i7 CPU @ 3.33GHz - 6 cores, 12 threads
+* 24GB RAM
+* Running Linux kernel 4.8.0-59-generic
+
+### RDBMS configuration
 
 This article runs a series of tests against a set of open source database
 server configurations to see if there are noteworthy differences between the
@@ -237,10 +350,77 @@ The database server configurations we test are the following:
 * MySQL Server 5.7 with InnoDB storage engine
 * PostgreSQL 9.6
 
-### MySQL Server
+#### MySQL Server
 
 TODO
 
-### PostgreSQL
+#### PostgreSQL
 
 TODO
+
+## Benchmark results
+
+### brick-and-mortar store application
+
+Loaded the database with the following data:
+
+| Table                 | # Records  |
+| --------------------- | ---------: |
+| products              | 1,000      |
+| suppliers             | 1,000      |
+| inventories           | 32,000     |
+| product_price_history | 5,000      |
+| customers             | 5,000      |
+| orders                | 100,000    |
+| order_details         | 1,000,000  |
+
+#### `customer_new_order`
+
+Here are the number of transactions per second that were possible (for N
+concurrent threads) for the `customer_new_order` scenario. These transactions
+are the number of new customer orders (including all order details) that could
+be created per second. This event entails reads from a number of tables,
+including `products` and `product_price_history` as well as writes to multiple
+tables.
+
+| Schema design                     |                        TPS                             |
+| --------------------------------- | -------------------------------------------------------|
+|                                   |       1      |      2      |      4      |      8      |
+| --------------------------------- | -----------: | ----------: | ----------: | ----------: |
+| A (auto-increment PKs no UUID)    |        68.64 |      143.21 |      323.39 |      636.65 |
+| A (UUID PKs only)                 |        43.59 |       88.37 |      110.62 |      130.25 |
+| C (auto-increment PK, ext UUID)   |        68.41 |      135.00 |      330.45 |      668.90 |
+
+#### `lookup_orders_for_customer`
+
+Here are the number of transactions per second that were possible (for N
+concurrent threads) for the `lookup_orders_for_customer` scenario. These
+transactions were a single `SELECT` statement that returned the latest (by
+created_on date) orders for a customer, with the number of items in the order
+and the amount of the order. This `SELECT` statement involved a lookup via
+customer external identifier (either auto-incrementing integer key or UUID)
+along with an aggregate operation across a set of records in the
+`order_details` table via a multi-table `JOIN` operation.
+
+| Schema design                     |                        TPS                             |
+| --------------------------------- | -------------------------------------------------------|
+|                                   |       1      |      2      |      4      |      8      |
+| --------------------------------- | -----------: | ----------: | ----------: | ----------: |
+| A (auto-increment PKs no UUID)    |      1839.67 |     3801.40 |     7282.87 |    13749.21 |
+| A (UUID PKs only)                 |      1171.78 |     3032.59 |     4566.45 |     7019.56 |
+| C (auto-increment PK, ext UUID)   |      1708.24 |     3429.79 |     6926.87 |    12937.92 |
+
+#### `popular_items`
+
+Here are the number of transactions per second that were possible (for N
+concurrent threads) for the `popular_items` scenario. These
+transactions were a single `SELECT` statement that returned the most
+popular-selling items in the store and the supplier that fulfilled that product
+the most. It involves a full table scan of all records in the `order_details`
+table and `JOIN` operations to multiple tables including the `products` and
+`suppliers` tables.
+
+| Schema design                     |                        TPS                             |
+| --------------------------------- | -------------------------------------------------------|
+|                                   |       1      |      2      |      4      |      8      |
+| --------------------------------- | -----------: | ----------: | ----------: | ----------: |

@@ -96,10 +96,11 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_details (
     order_id INT NOT NULL,
     product_id INT NOT NULL,
-    amount INT NOT NULL,
+    quantity INT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
     fulfilling_supplier_id INT NOT NULL,
     PRIMARY KEY (order_id, product_id),
-    KEY ix_product_id (product_id),
+    KEY ix_product_fulfilling_supplier_id (product_id, fulfilling_supplier_id),
     KEY ix_fulfilling_supplier_id (fulfilling_supplier_id)
 )
 ]]
@@ -170,10 +171,11 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_details (
     order_uuid VARCHAR(36) NOT NULL,
     product_uuid CHAR(36) NOT NULL,
-    amount INT NOT NULL,
+    quantity INT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
     fulfilling_supplier_uuid VARCHAR(36) NOT NULL,
     PRIMARY KEY (order_uuid, product_uuid),
-    KEY ix_product_id (product_uuid),
+    KEY ix_product_fulfilling_supplier_uuid (product_uuid, fulfilling_supplier_uuid),
     KEY ix_fulfilling_supplier_uuid (fulfilling_supplier_uuid)
 )
 ]]
@@ -252,10 +254,11 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_details (
     order_id INT NOT NULL,
     product_id INT NOT NULL,
-    amount INT NOT NULL,
+    quantity INT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
     fulfilling_supplier_id INT NOT NULL,
     PRIMARY KEY (order_id, product_id),
-    KEY ix_product_id (product_id),
+    KEY ix_product_fulfilling_supplier_id (product_id, fulfilling_supplier_id),
     KEY ix_fulfilling_supplier_id (fulfilling_supplier_id)
 )
 ]]
@@ -268,6 +271,8 @@ _insert_queries = {
         customers_values = "(NULL, '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         products = "INSERT INTO products (id, name, description, created_on, updated_on) VALUES",
         products_values = "(NULL, '%s', '%s', NOW(), NOW())",
+        product_price_history = "INSERT INTO product_price_history (product_id, starting_on, ending_on, price) VALUES",
+        product_price_history_values = "(%d, %s, %s, %0.2f)",
         suppliers = "INSERT INTO suppliers (id, name, address, city, state, postcode, created_on, updated_on) VALUES",
         suppliers_values = "(NULL, '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
@@ -278,6 +283,8 @@ _insert_queries = {
         customers_values = "(UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         products = "INSERT INTO products (uuid, name, description, created_on, updated_on) VALUES",
         products_values = "(UUID(), '%s', '%s', NOW(), NOW())",
+        product_price_history = "INSERT INTO product_price_history (product_uuid, starting_on, ending_on, price) VALUES",
+        product_price_history_values = "('%s', %s, %s, %0.2f)",
         suppliers = "INSERT INTO suppliers (uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
         suppliers_values = "(UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_uuid, supplier_uuid, total) VALUES",
@@ -288,6 +295,8 @@ _insert_queries = {
         customers_values = "(NULL, UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         products = "INSERT INTO products (id, uuid, name, description, created_on, updated_on) VALUES",
         products_values = "(NULL, UUID(), '%s', '%s', NOW(), NOW())",
+        product_price_history = "INSERT INTO product_price_history (product_id, starting_on, ending_on, price) VALUES",
+        product_price_history_values = "(%d, %s, %s, %0.2f)",
         suppliers = "INSERT INTO suppliers (id, uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
         suppliers_values = "(NULL, UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
@@ -297,6 +306,12 @@ _insert_queries = {
 
 statements = {
     a = {
+        begin = {
+            sql = "BEGIN"
+        },
+        commit = {
+            sql = "COMMIT"
+        },
         insert_order = {
             sql = [[
 INSERT INTO orders (id, customer_id, status, created_on, updated_on)
@@ -309,19 +324,22 @@ VALUES (NULL, ?, ?, NOW(), NOW())
         },
         insert_order_detail = {
             sql = [[
-INSERT INTO order_details (order_id, product_id, fulfilling_supplier_id, amount)
-VALUES (?, ?, ?, ?)
+INSERT INTO order_details (order_id, product_id, fulfilling_supplier_id, quantity, price)
+VALUES (?, ?, ?, ?, ?)
 ]],
             binds = {
                 sysbench.sql.type.INT,
                 sysbench.sql.type.INT,
                 sysbench.sql.type.INT,
-                sysbench.sql.type.INT
+                sysbench.sql.type.INT,
+                -- NOTE(jaypipes): DOUBLE bind params don't work (just 0 out
+                -- value of a Lua number) so we need to use CHAR(14) here...
+                {sysbench.sql.type.CHAR, 14}
             }
         },
         select_orders_by_customer = {
             sql = [[
-SELECT o.id, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.amount) AS total_amount
+SELECT o.id, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
 FROM orders AS o
 JOIN order_details AS od
  ON o.id = od.order_id
@@ -332,9 +350,30 @@ ORDER BY o.created_on DESC
             binds = {
                 sysbench.sql.type.INT
             }
+        },
+        select_most_popular_product_suppliers = {
+            sql = [[
+SELECT p.name, s.name, COUNT(DISTINCT o.id) AS included_in_orders, SUM(od.quantity * od.price) AS total_purchased
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+JOIN products AS p
+ ON od.product_id = p.id
+JOIN suppliers AS s
+ ON od.fulfilling_supplier_id = s.id
+GROUP BY p.id, s.id
+ORDER BY COUNT(DISTINCT o.id) DESC
+LIMIT 100
+]]
         }
     },
     b = {
+        begin = {
+            sql = "BEGIN"
+        },
+        commit = {
+            sql = "COMMIT"
+        },
         insert_order = {
             sql = [[
 INSERT INTO orders (uuid, customer_uuid, status, created_on, updated_on)
@@ -348,19 +387,22 @@ VALUES (?, ?, ?, NOW(), NOW())
         },
         insert_order_detail = {
             sql = [[
-INSERT INTO order_details (order_uuid, product_uuid, fulfilling_supplier_uuid, amount)
-VALUES (?, ?, ?, ?)
+INSERT INTO order_details (order_uuid, product_uuid, fulfilling_supplier_uuid, quantity, price)
+VALUES (?, ?, ?, ?, ?)
 ]],
             binds = {
                 {sysbench.sql.type.CHAR, 36},
                 {sysbench.sql.type.CHAR, 36},
                 {sysbench.sql.type.CHAR, 36},
-                sysbench.sql.type.INT
+                sysbench.sql.type.INT,
+                -- NOTE(jaypipes): DOUBLE bind params don't work (just 0 out
+                -- value of a Lua number) so we need to use CHAR(14) here...
+                {sysbench.sql.type.CHAR, 14}
             }
         },
         select_orders_by_customer = {
             sql = [[
-SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.amount) AS total_amount
+SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
 FROM orders AS o
 JOIN order_details AS od
  ON o.uuid = od.order_uuid
@@ -371,9 +413,30 @@ ORDER BY o.created_on DESC
             binds = {
                 {sysbench.sql.type.CHAR, 36},
             }
+        },
+        select_most_popular_product_suppliers = {
+            sql = [[
+SELECT p.name, s.name, COUNT(DISTINCT o.uuid) AS included_in_orders, SUM(od.quantity * od.price) AS total_purchased
+FROM orders AS o
+JOIN order_details AS od
+ ON o.uuid = od.order_uuid
+JOIN products AS p
+ ON od.product_uuid = p.uuid
+JOIN suppliers AS s
+ ON od.fulfilling_supplier_uuid = s.uuid
+GROUP BY p.uuid, s.uuid
+ORDER BY COUNT(DISTINCT o.uuid) DESC
+LIMIT 100
+]]
         }
     },
     c = {
+        begin = {
+            sql = "BEGIN"
+        },
+        commit = {
+            sql = "COMMIT"
+        },
         insert_order = {
             sql = [[
 INSERT INTO orders (id, uuid, customer_id, status, created_on, updated_on)
@@ -387,19 +450,22 @@ VALUES (NULL, ?, ?, ?, NOW(), NOW())
         },
         insert_order_detail = {
             sql = [[
-INSERT INTO order_details (order_id, product_id, fulfilling_supplier_id, amount)
-VALUES (?, ?, ?, ?)
+INSERT INTO order_details (order_id, product_id, fulfilling_supplier_id, quantity, price)
+VALUES (?, ?, ?, ?, ?)
 ]],
             binds = {
                 sysbench.sql.type.INT,
                 sysbench.sql.type.INT,
                 sysbench.sql.type.INT,
-                sysbench.sql.type.INT
+                sysbench.sql.type.INT,
+                -- NOTE(jaypipes): DOUBLE bind params don't work (just 0 out
+                -- value of a Lua number) so we need to use CHAR(14) here...
+                {sysbench.sql.type.CHAR, 14}
             }
         },
         select_orders_by_customer = {
             sql = [[
-SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.amount) AS total_amount
+SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
 FROM orders AS o
 JOIN order_details AS od
  ON o.id = od.order_id
@@ -412,12 +478,37 @@ ORDER BY o.created_on DESC
             binds = {
                 {sysbench.sql.type.CHAR, 36},
             }
+        },
+        select_most_popular_product_suppliers = {
+            sql = [[
+SELECT p.name, s.name, COUNT(DISTINCT o.id) AS included_in_orders, SUM(od.quantity * od.price) AS total_purchased
+FROM orders AS o
+JOIN order_details AS od
+ ON o.id = od.order_id
+JOIN products AS p
+ ON od.product_id = p.id
+JOIN suppliers AS s
+ ON od.fulfilling_supplier_id = s.id
+GROUP BY p.id, s.id
+ORDER BY COUNT(DISTINCT o.id) DESC
+LIMIT 100
+]]
         }
     }
 }
 
 _select_queries = {
     a = {
+        current_price_for_product = [[
+SELECT price FROM product_price_history
+WHERE product_id = %d
+AND NOW() BETWEEN starting_on AND ending_on
+]],
+        product_batch_limit_offset = [[
+SELECT p.id FROM products AS p
+ORDER BY p.id
+LIMIT %d OFFSET %d
+]],
         random_product_batch = [[
 SELECT p.id FROM products AS p
 LEFT JOIN inventories AS i
@@ -468,6 +559,16 @@ LIMIT %d
 ]]
     },
     b = {
+        current_price_for_product = [[
+SELECT price FROM product_price_history
+WHERE product_uuid = '%s'
+AND NOW() BETWEEN starting_on AND ending_on
+]],
+        product_batch_limit_offset = [[
+SELECT p.uuid FROM products AS p
+ORDER BY p.uuid
+LIMIT %d OFFSET %d
+]],
         random_product_batch = [[
 SELECT p.uuid FROM products AS p
 LEFT JOIN inventories AS i
@@ -518,6 +619,16 @@ LIMIT %d
 ]]
     },
     c = {
+        current_price_for_product = [[
+SELECT price FROM product_price_history
+WHERE product_id = %d
+AND NOW() BETWEEN starting_on AND ending_on
+]],
+        product_batch_limit_offset = [[
+SELECT p.id FROM products AS p
+ORDER BY p.id
+LIMIT %d OFFSET %d
+]],
         random_product_batch = [[
 SELECT p.id FROM products AS p
 LEFT JOIN inventories AS i
@@ -682,6 +793,31 @@ function _get_random_customer_batch()
     return customers
 end
 
+-- Get a batch of product internal identifiers using a limit and offset
+function _get_product_batch(limit, offset)
+    local query = _select_queries[schema_design]['product_batch_limit_offset']
+    query = string.format(query, limit, offset)
+    local rs = con:query(query)
+    local products = {}
+    for i = 1, rs.nrows do
+        row = rs:fetch_row()
+        product = row[1]
+        if schema_design ~= "b" then
+            product = tonumber(product)
+        end
+        table.insert(products, product)
+    end
+    return products
+end
+
+-- Get the current price for a product
+function _get_current_price_for_product(product)
+    local query = _select_queries[schema_design]['current_price_for_product']
+    query = string.format(query, product)
+    local price = con:query_row(query)
+    return tonumber(price)
+end
+
 -- Get a batch of random product and supplier identifier pairs. Used when
 -- creating a bunch of order details for customers during the prepare stage
 function _get_random_product_supplier_batch()
@@ -710,19 +846,17 @@ function _prepare_statement(stmt_name)
     stmt_tbl = statements[schema_design][stmt_name]
     assert(stmt_tbl ~= nil)
     stmt = con:prepare(stmt_tbl.sql)
-    if table.maxn(stmt_tbl.binds) then
+    if stmt_tbl.binds ~= nil and table.maxn(stmt_tbl.binds) then
         stmt_tbl.params = {}
-    end
-    for idx, bind in ipairs(stmt_tbl.binds) do
-        if type(bind) ~= "table" then
-            -- Convenience, allows us to have non-array bind parameter
-            -- descriptors in the statements table
-            bind = {bind}
+        for idx, bind in ipairs(stmt_tbl.binds) do
+            if type(bind) ~= "table" then
+                -- Convenience, allows us to have non-array bind parameter
+                -- descriptors in the statements table
+                bind = {bind}
+            end
+            param = stmt:bind_create(unpack(bind))
+            stmt_tbl.params[idx] = param
         end
-        param = stmt:bind_create(unpack(bind))
-        stmt_tbl.params[idx] = param
-    end
-    if table.maxn(stmt_tbl.binds) then
         stmt:bind_param(unpack(stmt_tbl.params))
     end
     statements[schema_design][stmt_name].statement = stmt
@@ -789,11 +923,13 @@ function _populate_orders(num_needed)
                     end
                 end
                 if not already_in_order then
+                    price = _get_current_price_for_product(product)
                     table.insert(products_in_order, product)
                     order_detail_stmt_params[1]:set(order_id)
                     order_detail_stmt_params[2]:set(product)
                     order_detail_stmt_params[3]:set(supplier)
                     order_detail_stmt_params[4]:set(amount)
+                    order_detail_stmt_params[5]:set(string.format("%10.2f", price))
                     order_detail_stmt:execute()
                     created_order_details = created_order_details + 1
                 end
@@ -834,6 +970,8 @@ function _create_supply_side()
     if num_inventories_needed > 0 then
         _populate_inventories(num_inventories_needed)
     end
+
+    _populate_product_prices()
 end
 
 function _populate_products(num_needed)
@@ -872,6 +1010,42 @@ function _populate_suppliers(num_needed)
     end
     con:bulk_insert_done()
     print(string.format("PREPARE: created %d supplier records.", num_needed))
+end
+
+function _populate_product_prices()
+    local query = _insert_queries[schema_design]['product_price_history']
+    local values_tpl = _insert_queries[schema_design]['product_price_history_values']
+    local num_products = _num_records_in_table('products')
+
+    -- For batches of 1000 product, create between 1 and 10 price periods for
+    -- each product
+    local count_n = 0
+    while count_n < num_products do
+        local products = _get_product_batch(1000, count_n)
+        con:bulk_insert_init(query)
+        for idx, product in ipairs(products) do
+            local num_periods = sysbench.rand.uniform(1, 10)
+            local start_date = os.time() - 1000000
+            for period_idx = 1, num_periods do
+                local end_datestr
+                if period_idx == num_periods then
+                    -- Make the last time interval end 100 years from now...
+                    end_date = os.time() + (100*365*24*60*60)
+                else
+                    end_date = start_date + sysbench.rand.uniform(100, 10000)
+                end
+                end_datestr = os.date("'%Y-%m-%d %H:%M:%S'", end_date)
+                start_datestr = os.date("'%Y-%m-%d %H:%M:%S'", start_date)
+                local price = sysbench.rand.uniform_double()
+                local values = string.format(values_tpl, product, start_datestr, end_datestr, price)
+                con:bulk_insert_next(values)
+                count_n = count_n + 1
+                start_date = end_date + 1
+            end
+        end
+        con:bulk_insert_done()
+    end
+    print(string.format("PREPARE: created %d price records.", count_n))
 end
 
 -- Get a batch of random product identifiers that are not already in
@@ -993,16 +1167,29 @@ function thread_init()
     scenario_stmts = _prepare_scenario(scenario)
 end
 
+function thread_done()
+    for idx, stmt_tbl in ipairs(scenario_stmts) do
+        stmt_tbl.statement:close()
+    end
+end
+
 scenarios = {
     lookup_orders_by_customer = {
         statements = {
             'select_orders_by_customer'
         }
     },
+    popular_items = {
+        statements = {
+            'select_most_popular_product_suppliers'
+        }
+    },
     customer_new_order = {
         statements = {
+            'begin',
             'insert_order',
-            'insert_order_detail'
+            'insert_order_detail',
+            'commit'
         }
     }
 }
@@ -1072,8 +1259,10 @@ end
 -- Creates a single order for the supplied customer external ID and array of
 -- external product IDs. A random quantity of each product is ordered.
 function customer_new_order(customer, products, order_uuid)
-    local ins_order = scenario_stmts[1]
-    local ins_order_det = scenario_stmts[2]
+    local begin = scenario_stmts[1]
+    local ins_order = scenario_stmts[2]
+    local ins_order_det = scenario_stmts[3]
+    local commit = scenario_stmts[4]
 
     local status = _create_order_status()
     local order_id = nil
@@ -1093,6 +1282,7 @@ function customer_new_order(customer, products, order_uuid)
         ins_order.params[3]:set(status)
     end
 
+    begin.statement:execute()
     ins_order.statement:execute()
 
     if schema_design ~= "b" then
@@ -1103,12 +1293,15 @@ function customer_new_order(customer, products, order_uuid)
     for idx, product in ipairs(products) do
         local amount = sysbench.rand.uniform(1, 100)
         local supplier = get_fulfiller_for_product(product)
+        local price = _get_current_price_for_product(product)
         ins_order_det.params[1]:set(order_id)
         ins_order_det.params[2]:set(product)
         ins_order_det.params[3]:set(supplier)
         ins_order_det.params[4]:set(amount)
+        ins_order_det.params[5]:set(string.format("%10.2f", price))
         ins_order_det.statement:execute()
     end
+    commit.statement:execute()
 end
 
 function execute_lookup_orders_by_customer()
@@ -1120,6 +1313,12 @@ function execute_lookup_orders_by_customer()
 
     for st_idx, stmt in ipairs(scenario_stmts) do
         stmt.params[1]:set(customer)
+        stmt.statement:execute()
+    end
+end
+
+function execute_popular_items()
+    for st_idx, stmt in ipairs(scenario_stmts) do
         stmt.statement:execute()
     end
 end
@@ -1138,11 +1337,9 @@ end
 function event()
     if scenario == 'lookup_orders_by_customer' then
         execute_lookup_orders_by_customer()
+    elseif scenario == 'popular_items' then
+        execute_popular_items()
     elseif scenario == 'customer_new_order' then
         execute_customer_new_order()
     end
-end
-
-function thread_done()
-    return
 end
