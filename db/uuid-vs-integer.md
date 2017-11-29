@@ -380,10 +380,9 @@ be created per second. This event entails reads from a number of tables,
 including `products` and `product_price_history` as well as writes to multiple
 tables.
 
-| Schema design                     |                        TPS                             |
 | --------------------------------- | -------------------------------------------------------|
-|                                   |       1      |      2      |      4      |      8      |
-| --------------------------------- | -----------: | ----------: | ----------: | ----------: |
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |        68.64 |      143.21 |      323.39 |      636.65 |
 | A (UUID PKs only)                 |        43.59 |       88.37 |      110.62 |      130.25 |
 | C (auto-increment PK, ext UUID)   |        68.41 |      135.00 |      330.45 |      668.90 |
@@ -399,10 +398,9 @@ customer external identifier (either auto-incrementing integer key or UUID)
 along with an aggregate operation across a set of records in the
 `order_details` table via a multi-table `JOIN` operation.
 
-| Schema design                     |                        TPS                             |
 | --------------------------------- | -------------------------------------------------------|
-|                                   |       1      |      2      |      4      |      8      |
-| --------------------------------- | -----------: | ----------: | ----------: | ----------: |
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |      1839.67 |     3801.40 |     7282.87 |    13749.21 |
 | A (UUID PKs only)                 |      1171.78 |     3032.59 |     4566.45 |     7019.56 |
 | C (auto-increment PK, ext UUID)   |      1708.24 |     3429.79 |     6926.87 |    12937.92 |
@@ -417,7 +415,6 @@ the most. It involves a full table scan of all records in the `order_details`
 table and `JOIN` operations to multiple tables including the `products` and
 `suppliers` tables.
 
-| Schema design                     |                        TPS                             |
 | --------------------------------- | -------------------------------------------------------|
-|                                   |       1      |      2      |      4      |      8      |
-| --------------------------------- | -----------: | ----------: | ----------: | ----------: |
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
