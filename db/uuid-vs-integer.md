@@ -25,12 +25,16 @@ impact of using one strategy over another.
     1. [A: Auto-inc integer PK, no UUIDs](#schema-design-a-auto-incrementing-integer-primary-key-no-uuids)
     1. [B: UUID PK](#schema-design-b-uuid-pk)
     1. [C: Auto-inc integer PK, external UUIDs](#schema-design-c-auto-incrementing-integer-primary-key-external-uuids)
-1. [Application data patterns](#application-data-patterns)
-    1. [Data-access patterns](#data-access-patterns)
-    1. [Data-write patterns](#data-write-patterns)
-1. [Database server-configurations](#database-server-configurations)
-    1. [MySQL Server](#mysql-server)
-    1. [PostgreSQL](#postgresql)
+1. [Application scenarios](#application-scenarios)
+    1. [New customer order](#new-customer-order)
+    1. [Lookup customer orders](#lookup-customer-orders)
+    1, [Lookup most popular items](#lookup-most-popular-items)
+1. [Test configuration](#test-configuration)
+    1. [Hardware setup](#hardware-setup)
+    1. [DB setup](#db-setup)
+        1. [MySQL Server](#mysql-server)
+        1. [PostgreSQL](#postgresql)
+1. [Benchmark results](#benchmark-results)
 
 ## Overview
 
@@ -183,7 +187,7 @@ CREATE TABLE products (
 );
 ```
 
-## Application data patterns
+## Application scenarios
 
 As mentioned above, I wanted to show the impact of these schema designs/choices
 in **real-world applications**. To that point, I developed a number benchmark
@@ -192,22 +196,14 @@ patterns.
 
 For the brick-and-mortar application, I came up with these scenarios:
 
-* `customer_new_order`
-* `lookup_orders_by_customer`
-* `popular_items`
+* New customer order
+* Lookup customer orders
+* Lookup most popular items
 
 Following is an explanation of each scenario and the SQL statements from which
 the scenario is composed.
 
-* Single-table external key lookup
-* Multi-table external key lookup
-* Self-referential single-table lookup
-* Self-referential multi-table lookup
-* Batched INSERTs, minimal UPDATEs or DELETEs
-* Single-record INSERTs, UPDATEs, and DELETEs
-* Multi-table transactions
-
-### `customer_new_order`
+### New customer order
 
 The `customer_new_order` scenario comes from the brick-and-mortar application.
 It is intended to emulate a single customer making a purchase of items in the
@@ -241,7 +237,7 @@ primary key before inserting order detail records. This step does not need to
 be done for schema design "B" since the UUID is generated ahead of order record
 creation.
 
-### `lookup_orders_by_customer`
+### Lookup customer orders
 
 The `lookup_orders_by_customer` scenario comes from the brick-and-mortar
 application and is designed to emulate a query that would be run by a customer
@@ -298,11 +294,12 @@ query on the customer's UUID value. Since the UUID *is* the primary key in
 schema design "B" and the auto-incrementing integer *is* the primary key in
 schema design "A", those queries need not join to the `customers` table.
 
-### `popular_items`
+### Lokup most popular items
 
-The `popular_items` scenario, from the brick-and-mortar application, includes a
-single `SELECT` statement that might be run by an extract-transform-load (ETL)
-tool or an online analytical processing (OLAP) program.
+The `lookup_most_popular_items` scenario, from the brick-and-mortar
+application, includes a single `SELECT` statement that might be run by an
+extract-transform-load (ETL) tool or an online analytical processing (OLAP)
+program.
 
 For the general manager of our brick-and-mortar store, she might want to know
 which are the best-selling products and which suppliers are providing those
@@ -329,9 +326,9 @@ end up being a full table scan of the `order_details`. I've specifically
 designed this query to show the impact that the choice of using UUID or
 auto-incrementing primary keys has on sequential read performance.
 
-## Configuration
+## Test configuration
 
-### Platform configuration
+### Hardware setup
 
 Some information about the hardware and platform used for the benchmarking:
 
@@ -339,7 +336,7 @@ Some information about the hardware and platform used for the benchmarking:
 * 24GB RAM
 * Running Linux kernel 4.8.0-59-generic
 
-### RDBMS configuration
+### DB configuration
 
 This article runs a series of tests against a set of open source database
 server configurations to see if there are noteworthy differences between the
@@ -374,7 +371,7 @@ Loaded the database with the following data:
 | orders                | 100,000    |
 | order_details         | 1,000,000  |
 
-#### `customer_new_order`
+#### New customer order
 
 Here are the number of transactions per second that were possible (for N
 concurrent threads) for the `customer_new_order` scenario. These transactions
@@ -391,10 +388,10 @@ tables.
 | A (UUID PKs only)                 |        43.59 |       88.37 |      110.62 |      130.25 |
 | C (auto-increment PK, ext UUID)   |        68.41 |      135.00 |      330.45 |      668.90 |
 
-#### `lookup_orders_for_customer`
+#### Lookup customer orders
 
 Here are the number of transactions per second that were possible (for N
-concurrent threads) for the `lookup_orders_for_customer` scenario. These
+concurrent threads) for the `lookup_orders_by_customer` scenario. These
 transactions were a single `SELECT` statement that returned the latest (by
 created_on date) orders for a customer, with the number of items in the order
 and the amount of the order. This `SELECT` statement involved a lookup via
@@ -410,10 +407,10 @@ along with an aggregate operation across a set of records in the
 | A (UUID PKs only)                 |      1171.78 |     3032.59 |     4566.45 |     7019.56 |
 | C (auto-increment PK, ext UUID)   |      1708.24 |     3429.79 |     6926.87 |    12937.92 |
 
-#### `popular_items`
+#### Lookup most popular items
 
 Here are the number of transactions per second that were possible (for N
-concurrent threads) for the `popular_items` scenario. These
+concurrent threads) for the `lookup_most_popular_items` scenario. These
 transactions were a single `SELECT` statement that returned the most
 popular-selling items in the store and the supplier that fulfilled that product
 the most. It involves a full table scan of all records in the `order_details`
