@@ -28,13 +28,18 @@ impact of using one strategy over another.
 1. [Application scenarios](#application-scenarios)
     1. [New customer order](#new-customer-order)
     1. [Lookup customer orders](#lookup-customer-orders)
-    1, [Lookup most popular items](#lookup-most-popular-items)
+    1. [Lookup most popular items](#lookup-most-popular-items)
 1. [Test configuration](#test-configuration)
     1. [Hardware setup](#hardware-setup)
+    1. [Benchmark variants](#benchmark-variants)
     1. [DB setup](#db-setup)
         1. [MySQL Server](#mysql-server)
         1. [PostgreSQL](#postgresql)
 1. [Benchmark results](#benchmark-results)
+    1. [New customer order](#new-customer-order-results)
+    1. [Lookup customer orders](#lookup-customer-order-results)
+    1. [Lookup most popular items](#lookup-most-popular-items-results)
+1. [Conclusions](#conclusions)
 
 ## Overview
 
@@ -387,7 +392,7 @@ TODO
 
 ## Benchmark results
 
-#### New customer order
+#### New customer order results
 
 Here are the number of transactions per second that were possible (for N
 concurrent threads) for the `customer_new_order` scenario. These transactions
@@ -420,7 +425,7 @@ tables.
 | B (UUID PKs only)                 |        37.69 |      158.91 |      156.18 |      202.04 |
 | C (auto-increment PK, ext UUID)   |        39.12 |      118.95 |      332.95 |      770.17 |
 
-#### Lookup customer orders
+#### Lookup customer orders results
 
 Here are the number of transactions per second that were possible (for N
 concurrent threads) for the `lookup_orders_by_customer` scenario. These
@@ -455,7 +460,7 @@ along with an aggregate operation across a set of records in the
 | B (UUID PKs only)                 |      1729.42 |     3464.81 |     5784.94 |     8355.06 |
 | C (auto-increment PK, ext UUID)   |      2184.99 |     4112.93 |     8403.43 |    15551.28 |
 
-#### Lookup most popular items
+#### Lookup most popular items results
 
 Here are the number of transactions per second that were possible (for N
 concurrent threads) for the `lookup_most_popular_items` scenario. These
@@ -488,3 +493,7 @@ table and `JOIN` operations to multiple tables including the `products` and
 | A (auto-increment PKs no UUID)    |         0.15 |        0.28 |        0.50 |        0.71 |
 | B (UUID PKs only)                 |         0.05 |        0.09 |        0.12 |        0.10 |
 | C (auto-increment PK, ext UUID)   |         0.15 |        0.28 |        0.49 |        0.74 |
+
+## Conclusions
+
+TODO
