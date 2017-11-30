@@ -177,9 +177,9 @@ SCHEMA_DESIGNS = {
 }
 
 SCENARIOS = (
-    "customer_new_order",
     "lookup_orders_by_customer",
     "popular_items",
+    "customer_new_order",
 )
 
 SIZES = {
@@ -223,7 +223,7 @@ if __name__ == '__main__':
             base_cmd = [
                 'sysbench',
                 '--mysql-password=sbtest',
-                '--time=120',
+                '--time=30',
                 '--schema-design=%s' % design,
                 'db/uuid-vs-integer/brick-and-mortar.lua',
             ] + size_args + sys.argv[1:]
