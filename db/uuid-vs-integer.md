@@ -336,6 +336,36 @@ Some information about the hardware and platform used for the benchmarking:
 * 24GB RAM
 * Running Linux kernel 4.8.0-59-generic
 
+All benchmarks were run overnight when nothing other than the benchmarks (and
+the DB server of course) were running on the machine.
+
+### Benchmark variants
+
+All benchmark runs were done using sysbench 1.0.12, with **_30 seconds_** run
+time for each scenario variation. All scenarios that write records to a table
+were run *after* scenarios that only read records. This was to ensure
+consistent results that were able to be compared between different initial
+sizes of database.
+
+For the brick-and-mortar application, I tested three sizes -- "small", "medium"
+and "large" -- of databases. The "small" size was pre-loaded with approximately
+4000 order detail records. The "medium" had around 21000 order detail records
+and the "large" had around 1M order detail records. I did this to see the
+relative impact of the base fact table (`order_details`) on the performance of
+various operations.
+
+Of course, 1M order detail records isn't a "large" database at all. However,
+the sizing here is only relative to each other. The medium database is
+Approximately an order of magnitude greater than the small database. And the
+large database is another order of magnitude greater than the medium.
+
+It's important to note that for the MySQL tests, the "large" database size
+represented an `order_details` table that was greater than the total size of
+the InnoDB buffer pool used by the server (128MB). You will note the impact of
+exhausting the buffer pool and needing to spool records off disk in some of the
+benchmarks below. You will see the impact of the database design and column
+type choices on that unfortunate situation as well!
+
 ### DB configuration
 
 This article runs a series of tests against a set of open source database
@@ -357,20 +387,6 @@ TODO
 
 ## Benchmark results
 
-### brick-and-mortar store application
-
-Loaded the database with the following data:
-
-| Table                 | # Records  |
-| --------------------- | ---------: |
-| products              | 1,000      |
-| suppliers             | 1,000      |
-| inventories           | 32,000     |
-| product_price_history | 5,000      |
-| customers             | 5,000      |
-| orders                | 100,000    |
-| order_details         | 1,000,000  |
-
 #### New customer order
 
 Here are the number of transactions per second that were possible (for N
@@ -380,12 +396,29 @@ be created per second. This event entails reads from a number of tables,
 including `products` and `product_price_history` as well as writes to multiple
 tables.
 
-| --------------------------------- | -------------------------------------------------------|
+##### TPS by number of threads and schema design (Small DB size)
+
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |        68.64 |      143.21 |      323.39 |      636.65 |
-| A (UUID PKs only)                 |        43.59 |       88.37 |      110.62 |      130.25 |
-| C (auto-increment PK, ext UUID)   |        68.41 |      135.00 |      330.45 |      668.90 |
+| A (auto-increment PKs no UUID)    |        61.22 |      377.84 |      792.60 |     1565.71 |
+| B (UUID PKs only)                 |        54.64 |      278.92 |      602.08 |     1308.86 |
+| C (auto-increment PK, ext UUID)   |        62.22 |      379.17 |      757.58 |     1386.34 |
+
+##### TPS by number of threads and schema design (Medium DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        59.52 |      332.57 |      729.49 |     1370.30 |
+| B (UUID PKs only)                 |        53.85 |      249.19 |      549.65 |     1111.76 |
+| C (auto-increment PK, ext UUID)   |        59.43 |      313.03 |      661.15 |     1383.46 |
+
+##### TPS by number of threads and schema design (Large DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        48.01 |      121.74 |      342.26 |      761.40 |
+| B (UUID PKs only)                 |        37.69 |      158.91 |      156.18 |      202.04 |
+| C (auto-increment PK, ext UUID)   |        39.12 |      118.95 |      332.95 |      770.17 |
 
 #### Lookup customer orders
 
@@ -398,12 +431,29 @@ customer external identifier (either auto-incrementing integer key or UUID)
 along with an aggregate operation across a set of records in the
 `order_details` table via a multi-table `JOIN` operation.
 
-| --------------------------------- | -------------------------------------------------------|
+##### TPS by number of threads and schema design (Small DB size)
+
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |      1839.67 |     3801.40 |     7282.87 |    13749.21 |
-| A (UUID PKs only)                 |      1171.78 |     3032.59 |     4566.45 |     7019.56 |
-| C (auto-increment PK, ext UUID)   |      1708.24 |     3429.79 |     6926.87 |    12937.92 |
+| A (auto-increment PKs no UUID)    |      4149.76 |    10523.92 |    22957.46 |    40242.01 |
+| B (UUID PKs only)                 |      3193.05 |    10760.80 |    21964.98 |    38493.70 |
+| C (auto-increment PK, ext UUID)   |      3975.79 |     9600.54 |    19771.80 |    35787.74 |
+
+##### TPS by number of threads and schema design (Nedium DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |      4554.44 |     9714.10 |    20963.30 |    36801.88 |
+| B (UUID PKs only)                 |      5049.82 |     9379.45 |    20216.94 |    34839.37 |
+| C (auto-increment PK, ext UUID)   |      4169.49 |     8455.55 |    18202.93 |    32877.63 |
+
+##### TPS by number of threads and schema design (Nedium DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |      2275.61 |     4365.19 |     8805.44 |    16472.31 |
+| B (UUID PKs only)                 |      1729.42 |     3464.81 |     5784.94 |     8355.06 |
+| C (auto-increment PK, ext UUID)   |      2184.99 |     4112.93 |     8403.43 |    15551.28 |
 
 #### Lookup most popular items
 
@@ -415,6 +465,26 @@ the most. It involves a full table scan of all records in the `order_details`
 table and `JOIN` operations to multiple tables including the `products` and
 `suppliers` tables.
 
-| --------------------------------- | -------------------------------------------------------|
+##### TPS by number of threads and schema design (Small DB size)
+
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        52.48 |       96.96 |      161.49 |      278.16 |
+| B (UUID PKs only)                 |        38.14 |       72.71 |      121.51 |      204.50 |
+| C (auto-increment PK, ext UUID)   |        50.85 |       97.47 |       161.1 |      272.19 |
+
+##### TPS by number of threads and schema design (Medium DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        10.49 |       19.55 |       35.64 |       55.61 |
+| B (UUID PKs only)                 |         7.84 |       15.01 |       28.45 |       43.09 |
+| C (auto-increment PK, ext UUID)   |        10.86 |       20.67 |       37.86 |       56.55 |
+
+##### TPS by number of threads and schema design (Large DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |         0.15 |        0.28 |        0.50 |        0.71 |
+| B (UUID PKs only)                 |         0.05 |        0.09 |        0.12 |        0.10 |
+| C (auto-increment PK, ext UUID)   |         0.15 |        0.28 |        0.49 |        0.74 |
