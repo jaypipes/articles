@@ -6,11 +6,11 @@ values as primary keys for database tables instead of the more traditional
 auto-incrementing integer primary key.
 
 Each of these articles tends to include some interesting graphs, but nearly all
-of them focus on two metrics for benchmark data: the speed of `INSERT` and the
-size of the table data and index data segments. While these metrics are both
-very important, focusing on them exclusively means that there are some critical
-points left out from the overall discussion of application performance and
-query efficiency.
+of them focus on two metrics for benchmark data: the speed of raw `INSERT`
+statements and the size of the table data and index data segments. While these
+metrics are both very important, focusing on them exclusively means that there
+are some critical points left out from the overall discussion of application
+performance and query efficiency.
 
 This article aims to provide a thorough comparison of UUID and integer field
 performance. We'll be examining schemas that represent real-world application
@@ -18,9 +18,8 @@ scenarios and run a series of comparative benchmarks that demonstrate the
 impact of using one strategy over another.
 
 1. [Overview](#overview)
-1. [Application database schemas](#application-databases)
-    1. [Brick-and-mortar store](#brick-and-mortar-store)
-    1. [Employee Directory](#employee-directory)
+    1. [Brick-and-mortar store application](#brick-and-mortar-store-application)
+1. [UUID column type considerations](#uuid-column-type-considerations)
 1. [Schema design strategies](#schema-design-strategies)
     1. [A: Auto-inc integer PK, no UUIDs](#schema-design-a-auto-incrementing-integer-primary-key-no-uuids)
     1. [B: UUID PK](#schema-design-b-uuid-pk)
@@ -28,6 +27,7 @@ impact of using one strategy over another.
 1. [Application scenarios](#application-scenarios)
     1. [New customer order](#new-customer-order)
     1. [Lookup customer orders](#lookup-customer-orders)
+    1. [Order counts by status](#order-counts-by-status)
     1. [Lookup most popular items](#lookup-most-popular-items)
 1. [Test configuration](#test-configuration)
     1. [Hardware setup](#hardware-setup)
@@ -38,6 +38,7 @@ impact of using one strategy over another.
 1. [Benchmark results](#benchmark-results)
     1. [New customer order](#new-customer-order-results)
     1. [Lookup customer orders](#lookup-customer-order-results)
+    1. [Order counts by status](#order-counts-by-status-results)
     1. [Lookup most popular items](#lookup-most-popular-items-results)
 1. [Conclusions](#conclusions)
 
@@ -66,32 +67,34 @@ integer columns in the underlying database schema. These questions will examine
 differences in read and write query performance as well as implications to
 scale-out and partitioning.
 
-## Application database schemas
+### Brick and mortar store application
 
 I've tried as much as possible to do the comparison tests and benchmarks in
-this article against database schemas that represent realistic applications
-that might use an RDBMS for primary backend storage. To explore all the data
-access patterns I wanted to explore, I created two different application
-schemas, one for a "brick-and-mortar store" and another for a representing a
-large hierarchical organization's employee directory.
+this article against a database schema that represents a more realistic
+application than one used by more synthetic benchmarks done to date.
 
-### Brick and mortar store
-
-The brick-and-mortar store point-of-sale application is all about recording
-information for an imaginary home-goods store: orders, customer, suppliers,
-products, etc.
+To explore all the data access patterns I wanted to explore, I created a
+"brick-and-mortar" store point-of-sale application. This application is all
+about recording information for an imaginary home-goods store: orders,
+customer, suppliers, products, etc.
 
 ![brick-and-mortar store E-R diagram](uuid-vs-integer/images/brick-and-mortar-e-r.png "Entity-relationship diagram for brick-and-mortar store application")
 
-### Employee directory
+## UUID column type considerations
 
-The employee directory application models a large organization's need for
-employees to be able to find information about employees and the structure of
-the organization. This schema and application will be used in comparing the
-performance of queries involving self-referential tables and hierarchical graph
-data.
+For UUID generation, I used a Lua module that, with some hacking to support
+thread-safe operations, generated UUIDs in a consistent fashion for each thread
+executing. This allowed me to compare the impact of UUID vs integer primary
+keys with permutations in initial database size.
 
-![employee directory E-R diagram](uuid-vs-integer/images/employee-directory-e-r.png "Entity-relationship diagram for employee directory application")
+For defining the UUID columns in MySQL, I went with a `CHAR(36)` column type.
+I'm aware that there are various suggestions for making more efficient UUID
+storage, including uusing a `BINARY(16)` column type or a `CHAR(32)` column
+type (after stripping the '-' dash characters from the typical string UUID
+representation). However, in my experience either `CHAR(36)`  or `VARCHAR(36)`
+column types, with the dashes kept in the stored value, is the most common
+representation of UUIDs in a MySQL database, and that's what I chose to compare
+to.
 
 ## Schema design strategies
 
@@ -203,6 +206,7 @@ For the brick-and-mortar application, I came up with these scenarios:
 
 * New customer order
 * Lookup customer orders
+* Order counts by status
 * Lookup most popular items
 
 Following is an explanation of each scenario and the SQL statements from which
@@ -299,7 +303,28 @@ query on the customer's UUID value. Since the UUID *is* the primary key in
 schema design "B" and the auto-incrementing integer *is* the primary key in
 schema design "A", those queries need not join to the `customers` table.
 
-### Lokup most popular items
+### Order counts by status
+
+The `order_counts_by_status` scenario, from the brick-and-mortar
+application, includes a single `SELECT` statement that is exactly the same for
+each schema design:
+
+```sql
+SELECT o.status, COUNT(*) AS num_orders
+FROM orders AS o
+GROUP BY o.status
+```
+
+There is a secondary index on the `orders.status` table, so this particular
+scenario is testing the impact of using UUIDs vs integer primary keys when the
+only column being used in an aggregate query is *not* the primary key and there
+is an index on that field. For MySQL with InnoDB, which uses a clustered index
+organized table layout, this means that each secondary index record also
+includes the primary key as well. So, we should be able to determine the impact
+of primary key column type choice even for queries that seemingly do not
+involve those primary keys.
+
+### Lookup most popular items
 
 The `lookup_most_popular_items` scenario, from the brick-and-mortar
 application, includes a single `SELECT` statement that might be run by an
