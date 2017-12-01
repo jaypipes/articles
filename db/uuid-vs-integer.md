@@ -450,6 +450,41 @@ tables.
 | B (UUID PKs only)                 |        37.69 |      158.91 |      156.18 |      202.04 |
 | C (auto-increment PK, ext UUID)   |        39.12 |      118.95 |      332.95 |      770.17 |
 
+#### Order counts per status results
+
+Here are the number of transactions per second that were possible (for N
+concurrent threads) for the `order_counts_by_status` scenario. These
+transactions were an identical `SELECT` statement that returned the count of
+orders per distinct status.
+
+This `SELECT` statement involved an aggregate query against a single table
+using a secondary index on the column involved in the grouping expression
+(`orders.status`).
+
+##### TPS by number of threads and schema design (Small DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |      1632.98 |     3352.06 |     6914.88 |    11190.83 |
+| B (UUID PKs only)                 |      1528.93 |     3036.75 |     6442.87 |    10515.95 |
+| C (auto-increment PK, ext UUID)   |      1532.73 |     2989.54 |     6446.44 |    10422.89 |
+
+##### TPS by number of threads and schema design (Nedium DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |       577.60 |     1150.79 |     2321.99 |     3479.98 |
+| B (UUID PKs only)                 |       533.64 |     1055.72 |     2131.53 |     3289.27 |
+| C (auto-increment PK, ext UUID)   |       556.29 |     1081.00 |     2247.74 |     3394.42 |
+
+##### TPS by number of threads and schema design (Nedium DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        46.60 |       91.93 |      179.60 |      269.33 |
+| B (UUID PKs only)                 |        41.94 |       81.89 |      164.33 |      241.40 |
+| C (auto-increment PK, ext UUID)   |        42.30 |       83.96 |      165.03 |      227.74 |
+
 #### Lookup customer orders results
 
 Here are the number of transactions per second that were possible (for N
