@@ -177,6 +177,7 @@ SCHEMA_DESIGNS = {
 }
 
 SCENARIOS = (
+    "order_counts_by_status",
     "lookup_orders_by_customer",
     "popular_items",
     "customer_new_order",

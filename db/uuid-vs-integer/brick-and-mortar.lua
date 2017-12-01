@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS orders (
     status VARCHAR(20) NOT NULL,
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL,
+    INDEX ix_status (status),
     INDEX ix_customer_id (customer_id)
 )
 ]],
@@ -164,6 +165,7 @@ CREATE TABLE IF NOT EXISTS orders (
     status VARCHAR(20) NOT NULL,
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL,
+    INDEX ix_status (status),
     INDEX ix_customer_uuid (customer_uuid)
 )
 ]],
@@ -246,6 +248,7 @@ CREATE TABLE IF NOT EXISTS orders (
     status VARCHAR(20) NOT NULL,
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL,
+    INDEX ix_status (status),
     INDEX ix_customer_id (customer_id),
     UNIQUE INDEX uix_uuid (uuid)
 )
@@ -365,6 +368,13 @@ GROUP BY p.id, s.id
 ORDER BY COUNT(DISTINCT o.id) DESC
 LIMIT 100
 ]]
+        },
+        select_order_counts_by_status = {
+            sql = [[
+SELECT o.status, COUNT(*) AS num_orders
+FROM orders AS o
+GROUP BY o.status
+]]
         }
     },
     b = {
@@ -427,6 +437,13 @@ JOIN suppliers AS s
 GROUP BY p.uuid, s.uuid
 ORDER BY COUNT(DISTINCT o.uuid) DESC
 LIMIT 100
+]]
+        },
+        select_order_counts_by_status = {
+            sql = [[
+SELECT o.status, COUNT(*) AS num_orders
+FROM orders AS o
+GROUP BY o.status
 ]]
         }
     },
@@ -492,6 +509,13 @@ JOIN suppliers AS s
 GROUP BY p.id, s.id
 ORDER BY COUNT(DISTINCT o.id) DESC
 LIMIT 100
+]]
+        },
+        select_order_counts_by_status = {
+            sql = [[
+SELECT o.status, COUNT(*) AS num_orders
+FROM orders AS o
+GROUP BY o.status
 ]]
         }
     }
@@ -1174,6 +1198,11 @@ function thread_done()
 end
 
 scenarios = {
+    order_counts_by_status = {
+        statements = {
+            'select_order_counts_by_status'
+        }
+    },
     lookup_orders_by_customer = {
         statements = {
             'select_orders_by_customer'
@@ -1323,6 +1352,12 @@ function execute_popular_items()
     end
 end
 
+function execute_order_counts_by_status()
+    for st_idx, stmt in ipairs(scenario_stmts) do
+        stmt.statement:execute()
+    end
+end
+
 function execute_customer_new_order()
     local selected = sysbench.rand.uniform(1, table.maxn(customers))
     local customer = customers[selected]
@@ -1341,5 +1376,7 @@ function event()
         execute_popular_items()
     elseif scenario == 'customer_new_order' then
         execute_customer_new_order()
+    elseif scenario == 'order_counts_by_status' then
+        execute_order_counts_by_status()
     end
 end
