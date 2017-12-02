@@ -30,8 +30,11 @@ sysbench.cmdline.options = {
 -- Nested table of schema design to table name to the CREATE TABLE statement to
 -- execute for that table
 _schema = {
-    a = {
-        customers = [[
+
+a = {
+    mysql = {
+        {
+            "customers", [[
 CREATE TABLE IF NOT EXISTS customers (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
@@ -42,8 +45,10 @@ CREATE TABLE IF NOT EXISTS customers (
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL
 )
-]],
-        products = [[
+]]
+        },
+        {
+            "products", [[
 CREATE TABLE IF NOT EXISTS products (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
@@ -51,8 +56,10 @@ CREATE TABLE IF NOT EXISTS products (
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL
 )
-]],
-        product_price_history = [[
+]]
+        },
+        {
+            "product_price_history", [[
 CREATE TABLE IF NOT EXISTS product_price_history (
     product_id INT NOT NULL,
     starting_on DATETIME NOT NULL,
@@ -60,8 +67,10 @@ CREATE TABLE IF NOT EXISTS product_price_history (
     price DECIMAL(10,2) NOT NULL,
     PRIMARY KEY (product_id, starting_on, ending_on)
 )
-]],
-        inventories = [[
+]]
+        },
+        {
+            "inventories", [[
 CREATE TABLE IF NOT EXISTS inventories (
     product_id INT NOT NULL,
     supplier_id INT NOT NULL,
@@ -69,8 +78,10 @@ CREATE TABLE IF NOT EXISTS inventories (
     PRIMARY KEY (product_id, supplier_id),
     INDEX ix_supplier_id (supplier_id)
 )
-]],
-        supplers = [[
+]]
+        },
+        {
+            "supplers", [[
 CREATE TABLE IF NOT EXISTS suppliers (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
@@ -81,8 +92,10 @@ CREATE TABLE IF NOT EXISTS suppliers (
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL
 )
-]],
-        orders = [[
+]]
+        },
+        {
+            "orders", [[
 CREATE TABLE IF NOT EXISTS orders (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     customer_id INT NOT NULL,
@@ -92,8 +105,10 @@ CREATE TABLE IF NOT EXISTS orders (
     INDEX ix_status (status),
     INDEX ix_customer_id (customer_id)
 )
-]],
-        order_details = [[
+]]
+        },
+        {
+            "order_details", [[
 CREATE TABLE IF NOT EXISTS order_details (
     order_id INT NOT NULL,
     product_id INT NOT NULL,
@@ -105,9 +120,123 @@ CREATE TABLE IF NOT EXISTS order_details (
     KEY ix_fulfilling_supplier_id (fulfilling_supplier_id)
 )
 ]]
+        }
     },
-    b = {
-        customers = [[
+    pgsql = {
+        {
+            "customers", [[
+CREATE TABLE IF NOT EXISTS customers (
+    id SERIAL NOT NULL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    address TEXT NOT NULL,
+    state VARCHAR(20) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    postcode VARCHAR(20) NOT NULL,
+    created_on TIMESTAMP NOT NULL,
+    updated_on TIMESTAMP NULL
+)
+]]
+        },
+        {
+            "products", [[
+CREATE TABLE IF NOT EXISTS products (
+    id SERIAL NOT NULL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    description TEXT NULL,
+    created_on TIMESTAMP NOT NULL,
+    updated_on TIMESTAMP NULL
+)
+]]
+        },
+        {
+            "product_price_history", [[
+CREATE TABLE IF NOT EXISTS product_price_history (
+    product_id SERIAL NOT NULL,
+    starting_on TIMESTAMP NOT NULL,
+    ending_on TIMESTAMP NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    PRIMARY KEY (product_id, starting_on, ending_on)
+)
+]]
+        },
+        {
+            "inventories", [[
+CREATE TABLE IF NOT EXISTS inventories (
+    product_id SERIAL NOT NULL,
+    supplier_id SERIAL NOT NULL,
+    total INT NOT NULL,
+    PRIMARY KEY (product_id, supplier_id)
+)
+]]
+        },
+        {
+            "inventories_idx", [[
+CREATE INDEX ix_supplier_id ON inventories (supplier_id)
+]]
+        },
+        {
+            "supplers", [[
+CREATE TABLE IF NOT EXISTS suppliers (
+    id SERIAL NOT NULL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    address TEXT NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    state VARCHAR(20) NOT NULL,
+    postcode VARCHAR(20) NOT NULL,
+    created_on TIMESTAMP NOT NULL,
+    updated_on TIMESTAMP NULL
+)
+]]
+        },
+        {
+            "orders", [[
+CREATE TABLE IF NOT EXISTS orders (
+    id SERIAL NOT NULL PRIMARY KEY,
+    customer_id SERIAL NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    created_on TIMESTAMP NOT NULL,
+    updated_on TIMESTAMP NULL
+)
+]]
+        },
+        {
+            "orders_idx_status", [[
+CREATE INDEX ix_status ON orders (status)
+]]
+        },
+        {
+            "orders_idx_customer_id", [[
+CREATE INDEX ix_customer_id ON orders (customer_id)
+]]
+        },
+        {
+            "order_details", [[
+CREATE TABLE IF NOT EXISTS order_details (
+    order_id SERIAL NOT NULL,
+    product_id SERIAL NOT NULL,
+    quantity INT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    fulfilling_supplier_id SERIAL NOT NULL,
+    PRIMARY KEY (order_id, product_id)
+)
+]]
+        },
+        {
+            "order_details_idx_product_fulfilling_supplier_id", [[
+CREATE INDEX ix_product_fulfilling_supplier_id ON order_details (product_id, fulfilling_supplier_id)
+]]
+        },
+        {
+            "order_details_idx_fulfilling_supplier_id", [[
+CREATE INDEX ix_fulfilling_supplier_id ON order_details (fulfilling_supplier_id)
+]]
+        }
+    }
+},
+b = {
+    mysql = {
+        {
+            "customers", [[
 CREATE TABLE IF NOT EXISTS customers (
     uuid CHAR(36) NOT NULL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
@@ -118,8 +247,10 @@ CREATE TABLE IF NOT EXISTS customers (
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL
 )
-]],
-        products = [[
+]]
+        },
+        {
+            "products", [[
 CREATE TABLE IF NOT EXISTS products (
     uuid CHAR(36) NOT NULL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
@@ -127,8 +258,10 @@ CREATE TABLE IF NOT EXISTS products (
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL
 )
-]],
-        product_price_history = [[
+]]
+        },
+        {
+            "product_price_history", [[
 CREATE TABLE IF NOT EXISTS product_price_history (
     product_uuid CHAR(36) NOT NULL,
     starting_on DATETIME NOT NULL,
@@ -136,8 +269,10 @@ CREATE TABLE IF NOT EXISTS product_price_history (
     price DECIMAL(10,2) NOT NULL,
     PRIMARY KEY (product_uuid, starting_on, ending_on)
 )
-]],
-        inventories = [[
+]]
+        },
+        {
+            "inventories", [[
 CREATE TABLE IF NOT EXISTS inventories (
     product_uuid CHAR(36) NOT NULL,
     supplier_uuid CHAR(36) NOT NULL,
@@ -145,8 +280,10 @@ CREATE TABLE IF NOT EXISTS inventories (
     PRIMARY KEY (product_uuid, supplier_uuid),
     INDEX ix_supplier_uuid (supplier_uuid)
 )
-]],
-        suppliers = [[
+]]
+        },
+        {
+            "suppliers", [[
 CREATE TABLE IF NOT EXISTS suppliers (
     uuid CHAR(36) NOT NULL PRIMARY KEY,
     name VARCHAR(200) NOT NULL,
@@ -157,8 +294,10 @@ CREATE TABLE IF NOT EXISTS suppliers (
     created_on DATETIME NOT NULL,
     updated_on DATETIME NULL
 )
-]],
-        orders = [[
+]]
+        },
+        {
+            "orders", [[
 CREATE TABLE IF NOT EXISTS orders (
     uuid CHAR(36) NOT NULL PRIMARY KEY,
     customer_uuid CHAR(36) NOT NULL,
@@ -168,8 +307,10 @@ CREATE TABLE IF NOT EXISTS orders (
     INDEX ix_status (status),
     INDEX ix_customer_uuid (customer_uuid)
 )
-]],
-        order_details = [[
+]]
+        },
+        {
+            "order_details", [[
 CREATE TABLE IF NOT EXISTS order_details (
     order_uuid VARCHAR(36) NOT NULL,
     product_uuid CHAR(36) NOT NULL,
@@ -181,9 +322,13 @@ CREATE TABLE IF NOT EXISTS order_details (
     KEY ix_fulfilling_supplier_uuid (fulfilling_supplier_uuid)
 )
 ]]
-    },
-    c = {
-        customers = [[
+        }
+    }
+},
+c = {
+    mysql = {
+        {
+            "customers", [[
 CREATE TABLE IF NOT EXISTS customers (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     uuid CHAR(36) NOT NULL,
@@ -196,8 +341,10 @@ CREATE TABLE IF NOT EXISTS customers (
     updated_on DATETIME NULL,
     UNIQUE INDEX uix_uuid (uuid)
 )
-]],
-        products = [[
+]]
+        },
+        {
+            "products", [[
 CREATE TABLE IF NOT EXISTS products (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     uuid VARCHAR(36) NOT NULL,
@@ -207,8 +354,10 @@ CREATE TABLE IF NOT EXISTS products (
     updated_on DATETIME NULL,
     UNIQUE INDEX uix_uuid (uuid)
 )
-]],
-        product_price_history = [[
+]]
+        },
+        {
+            "product_price_history", [[
 CREATE TABLE IF NOT EXISTS product_price_history (
     product_id INT NOT NULL,
     starting_on DATETIME NOT NULL,
@@ -216,8 +365,10 @@ CREATE TABLE IF NOT EXISTS product_price_history (
     price DECIMAL(10,2) NOT NULL,
     PRIMARY KEY (product_id, starting_on, ending_on)
 )
-]],
-        inventories = [[
+]]
+        },
+        {
+            "inventories", [[
 CREATE TABLE IF NOT EXISTS inventories (
     product_id INT NOT NULL,
     supplier_id INT NOT NULL,
@@ -225,8 +376,10 @@ CREATE TABLE IF NOT EXISTS inventories (
     PRIMARY KEY (product_id, supplier_id),
     INDEX ix_supplier_id (supplier_id)
 )
-]],
-        suppliers = [[
+]]
+        },
+        {
+            "suppliers", [[
 CREATE TABLE IF NOT EXISTS suppliers (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     uuid VARCHAR(36) NOT NULL,
@@ -239,8 +392,10 @@ CREATE TABLE IF NOT EXISTS suppliers (
     updated_on DATETIME NULL,
     UNIQUE INDEX uix_uuid (uuid)
 )
-]],
-        orders = [[
+]]
+        },
+        {
+            "orders", [[
 CREATE TABLE IF NOT EXISTS orders (
     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     customer_id INT NOT NULL,
@@ -252,8 +407,10 @@ CREATE TABLE IF NOT EXISTS orders (
     INDEX ix_customer_id (customer_id),
     UNIQUE INDEX uix_uuid (uuid)
 )
-]],
-        order_details = [[
+]]
+        },
+        {
+            "order_details", [[
 CREATE TABLE IF NOT EXISTS order_details (
     order_id INT NOT NULL,
     product_id INT NOT NULL,
@@ -265,8 +422,11 @@ CREATE TABLE IF NOT EXISTS order_details (
     KEY ix_fulfilling_supplier_id (fulfilling_supplier_id)
 )
 ]]
+        }
     }
 }
+
+}  -- end _schemas table
 
 _insert_queries = {
     a = {
@@ -709,15 +869,18 @@ WHERE c.uuid = '%s'
     }
 }
 
-function _init()
+function init()
     drv = sysbench.sql.driver()
-    con = drv:connect()
     drv_name = drv:name()
     schema_design = sysbench.opt.schema_design
 
-    if drv_name ~= "mysql" and drv_name ~= "postgresql" then
+    if drv_name ~= "mysql" and drv_name ~= "pgsql" then
         error("Unsupported database driver:" .. drv_name)
     end
+end
+
+function connect()
+    con = drv:connect()
 end
 
 function _num_records_in_table(table_name)
@@ -728,8 +891,10 @@ end
 function _create_schema()
     print("PREPARE: ensuring database schema")
 
-    for tbl, sql in pairs(_schema[schema_design]) do
-        print("PREPARE: creating table " .. tbl)
+    for x, schema_block in ipairs(_schema[schema_design][drv_name]) do
+        local element = schema_block[1]
+        local sql = schema_block[2]
+        print("PREPARE: creating " .. element)
         con:query(sql)
     end
 end
@@ -1146,7 +1311,8 @@ end
 -- Creates the schema tables and populates the tables with data up to the
 -- required record counts taken from the command-line options
 function prepare()
-    _init()
+    init()
+    connect()
     _create_schema()
     _create_supply_side()
     _create_consumer_side()
@@ -1155,16 +1321,25 @@ end
 -- Completely removes and re-creates the database/catalog being used for
 -- testing
 function cleanup()
-    _init()
+    init()
 
-    -- TODO(jayupipes): Support PostgreSQL schema/catalog name in sysbench
     local schema_name = sysbench.opt.mysql_db
+    if drv_name == 'pgsql' then
+        schema_name = sysbench.opt.pgsql_db
+    end
 
     print("CLEANUP: dropping and recreating schema " .. schema_name)
 
     if drv_name == 'mysql' then
-        con:query("DROP SCHEMA IF EXISTS `" .. sysbench.opt.mysql_db .. "`")
-        con:query("CREATE SCHEMA `" .. sysbench.opt.mysql_db .. "`")
+        connect()
+        con:query("DROP DATABASE IF EXISTS " .. schema_name)
+        con:query("CREATE DATABASE " .. schema_name)
+    else
+        -- Not able to drop the database that is actively connected to in
+        -- PostgreSQL, so here, we close the connection and hack the drop using
+        -- the dropdb CLI tool
+        os.execute("su - postgres -c 'dropdb --if-exists sbtest'")
+        os.execute("su - postgres -c 'createdb sbtest -Osbtest'")
     end
 end
 
@@ -1181,7 +1356,8 @@ function _get_customer_external_ids()
 end
 
 function thread_init()
-    _init()
+    init()
+    connect()
     -- uuid.new() isn't thread-safe -- it creates the same set of UUIDs in
     -- order for each thread -- so we trick it into creating a "new" UUID by
     -- creating a new fake MAC address per thread
