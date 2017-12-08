@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS product_price_history (
     product_id INT NOT NULL,
     starting_on DATETIME NOT NULL,
     ending_on DATETIME NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
+    price DOUBLE NOT NULL,
     PRIMARY KEY (product_id, starting_on, ending_on)
 )
 ]]
@@ -113,7 +113,7 @@ CREATE TABLE IF NOT EXISTS order_details (
     order_id INT NOT NULL,
     product_id INT NOT NULL,
     quantity INT NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
+    price DOUBLE NOT NULL,
     fulfilling_supplier_id INT NOT NULL,
     PRIMARY KEY (order_id, product_id),
     KEY ix_product_fulfilling_supplier_id (product_id, fulfilling_supplier_id),
@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS product_price_history (
     product_id SERIAL NOT NULL,
     starting_on TIMESTAMP NOT NULL,
     ending_on TIMESTAMP NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
+    price NUMERIC NOT NULL,
     PRIMARY KEY (product_id, starting_on, ending_on)
 )
 ]]
@@ -215,7 +215,7 @@ CREATE TABLE IF NOT EXISTS order_details (
     order_id SERIAL NOT NULL,
     product_id SERIAL NOT NULL,
     quantity INT NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
+    price NUMERIC NOT NULL,
     fulfilling_supplier_id SERIAL NOT NULL,
     PRIMARY KEY (order_id, product_id)
 )
@@ -266,7 +266,7 @@ CREATE TABLE IF NOT EXISTS product_price_history (
     product_uuid CHAR(36) NOT NULL,
     starting_on DATETIME NOT NULL,
     ending_on DATETIME NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
+    price DOUBLE NOT NULL,
     PRIMARY KEY (product_uuid, starting_on, ending_on)
 )
 ]]
@@ -315,7 +315,7 @@ CREATE TABLE IF NOT EXISTS order_details (
     order_uuid VARCHAR(36) NOT NULL,
     product_uuid CHAR(36) NOT NULL,
     quantity INT NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
+    price DOUBLE NOT NULL,
     fulfilling_supplier_uuid VARCHAR(36) NOT NULL,
     PRIMARY KEY (order_uuid, product_uuid),
     KEY ix_product_fulfilling_supplier_uuid (product_uuid, fulfilling_supplier_uuid),
@@ -362,7 +362,7 @@ CREATE TABLE IF NOT EXISTS product_price_history (
     product_id INT NOT NULL,
     starting_on DATETIME NOT NULL,
     ending_on DATETIME NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
+    price DOUBLE NOT NULL,
     PRIMARY KEY (product_id, starting_on, ending_on)
 )
 ]]
@@ -415,7 +415,7 @@ CREATE TABLE IF NOT EXISTS order_details (
     order_id INT NOT NULL,
     product_id INT NOT NULL,
     quantity INT NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
+    price DOUBLE NOT NULL,
     fulfilling_supplier_id INT NOT NULL,
     PRIMARY KEY (order_id, product_id),
     KEY ix_product_fulfilling_supplier_id (product_id, fulfilling_supplier_id),
@@ -430,14 +430,14 @@ CREATE TABLE IF NOT EXISTS order_details (
 
 _insert_queries = {
     a = {
-        customers = "INSERT INTO customers (id, name, address, city, state, postcode, created_on, updated_on) VALUES",
-        customers_values = "(NULL, '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
-        products = "INSERT INTO products (id, name, description, created_on, updated_on) VALUES",
-        products_values = "(NULL, '%s', '%s', NOW(), NOW())",
+        customers = "INSERT INTO customers (name, address, city, state, postcode, created_on, updated_on) VALUES",
+        customers_values = "('%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
+        products = "INSERT INTO products (name, description, created_on, updated_on) VALUES",
+        products_values = "('%s', '%s', NOW(), NOW())",
         product_price_history = "INSERT INTO product_price_history (product_id, starting_on, ending_on, price) VALUES",
         product_price_history_values = "(%d, %s, %s, %0.2f)",
-        suppliers = "INSERT INTO suppliers (id, name, address, city, state, postcode, created_on, updated_on) VALUES",
-        suppliers_values = "(NULL, '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
+        suppliers = "INSERT INTO suppliers (name, address, city, state, postcode, created_on, updated_on) VALUES",
+        suppliers_values = "('%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
         inventories_values = "(%d, %d, %d)",
     },
@@ -454,14 +454,14 @@ _insert_queries = {
         inventories_values = "('%s', '%s', %d)",
     },
     c = {
-        customers = "INSERT INTO customers (id, uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
-        customers_values = "(NULL, UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
-        products = "INSERT INTO products (id, uuid, name, description, created_on, updated_on) VALUES",
-        products_values = "(NULL, UUID(), '%s', '%s', NOW(), NOW())",
+        customers = "INSERT INTO customers (uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
+        customers_values = "(UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
+        products = "INSERT INTO products (uuid, name, description, created_on, updated_on) VALUES",
+        products_values = "(UUID(), '%s', '%s', NOW(), NOW())",
         product_price_history = "INSERT INTO product_price_history (product_id, starting_on, ending_on, price) VALUES",
         product_price_history_values = "(%d, %s, %s, %0.2f)",
-        suppliers = "INSERT INTO suppliers (id, uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
-        suppliers_values = "(NULL, UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
+        suppliers = "INSERT INTO suppliers (uuid, name, address, city, state, postcode, created_on, updated_on) VALUES",
+        suppliers_values = "(UUID(), '%s', '%s', '%s', '%s', '%s', NOW(), NOW())",
         inventories = "INSERT INTO inventories (product_id, supplier_id, total) VALUES",
         inventories_values = "(%d, %d, %d)",
     }
@@ -477,8 +477,8 @@ statements = {
         },
         insert_order = {
             sql = [[
-INSERT INTO orders (id, customer_id, status, created_on, updated_on)
-VALUES (NULL, ?, ?, NOW(), NOW())
+INSERT INTO orders (customer_id, status, created_on, updated_on)
+VALUES (?, ?, NOW(), NOW())
 ]],
             binds = {
                 sysbench.sql.type.INT,
@@ -495,9 +495,7 @@ VALUES (?, ?, ?, ?, ?)
                 sysbench.sql.type.INT,
                 sysbench.sql.type.INT,
                 sysbench.sql.type.INT,
-                -- NOTE(jaypipes): DOUBLE bind params don't work (just 0 out
-                -- value of a Lua number) so we need to use CHAR(14) here...
-                {sysbench.sql.type.CHAR, 14}
+                sysbench.sql.type.DOUBLE,
             }
         },
         select_orders_by_customer = {
@@ -565,9 +563,7 @@ VALUES (?, ?, ?, ?, ?)
                 {sysbench.sql.type.CHAR, 36},
                 {sysbench.sql.type.CHAR, 36},
                 sysbench.sql.type.INT,
-                -- NOTE(jaypipes): DOUBLE bind params don't work (just 0 out
-                -- value of a Lua number) so we need to use CHAR(14) here...
-                {sysbench.sql.type.CHAR, 14}
+                sysbench.sql.type.DOUBLE,
             }
         },
         select_orders_by_customer = {
@@ -635,9 +631,7 @@ VALUES (?, ?, ?, ?, ?)
                 sysbench.sql.type.INT,
                 sysbench.sql.type.INT,
                 sysbench.sql.type.INT,
-                -- NOTE(jaypipes): DOUBLE bind params don't work (just 0 out
-                -- value of a Lua number) so we need to use CHAR(14) here...
-                {sysbench.sql.type.CHAR, 14}
+                sysbench.sql.type.DOUBLE,
             }
         },
         select_orders_by_customer = {
@@ -699,8 +693,6 @@ LEFT JOIN inventories AS i
  ON p.id = i.product_id
 WHERE i.product_id IS NULL
 GROUP BY p.id
-ORDER BY RAND()
-LIMIT 50
 ]],
         random_supplier_batch = [[
 SELECT s.id FROM suppliers AS s
@@ -708,24 +700,13 @@ LEFT JOIN inventories AS i
  ON s.id = i.supplier_id
 WHERE i.supplier_id IS NULL
 GROUP BY s.id
-ORDER BY RAND()
-LIMIT 50
 ]],
         random_customer_batch = [[
 SELECT c.id FROM customers AS c
-ORDER BY RAND()
-LIMIT 50
-]],
-        random_customer_external_ids = [[
-SELECT c.id FROM customers AS c
-ORDER BY RAND()
-LIMIT 100
 ]],
         random_product_supplier_batch = [[
 SELECT product_id, supplier_id
 FROM inventories AS i
-ORDER BY RAND()
-LIMIT 200
 ]],
         fulfiller_for_product = [[
 SELECT i.supplier_id
@@ -738,8 +719,6 @@ LIMIT 1
 SELECT i.product_id
 FROM inventories AS i
 GROUP BY i.product_id
-ORDER BY RAND()
-LIMIT %d
 ]]
     },
     b = {
@@ -759,8 +738,6 @@ LEFT JOIN inventories AS i
  ON p.uuid = i.product_uuid
 WHERE i.product_uuid IS NULL
 GROUP BY p.uuid
-ORDER BY RAND()
-LIMIT 50
 ]],
         random_supplier_batch = [[
 SELECT s.uuid FROM suppliers AS s
@@ -768,24 +745,13 @@ LEFT JOIN inventories AS i
  ON s.uuid = i.supplier_uuid
 WHERE i.supplier_uuid IS NULL
 GROUP BY s.uuid
-ORDER BY RAND()
-LIMIT 50
 ]],
         random_customer_batch = [[
 SELECT c.uuid FROM customers AS c
-ORDER BY RAND()
-LIMIT 50
-]],
-        random_customer_external_ids = [[
-SELECT c.uuid FROM customers AS c
-ORDER BY RAND()
-LIMIT 100
 ]],
         random_product_supplier_batch = [[
 SELECT product_uuid, supplier_uuid
 FROM inventories AS i
-ORDER BY RAND()
-LIMIT 200
 ]],
         fulfiller_for_product = [[
 SELECT i.supplier_uuid
@@ -798,8 +764,6 @@ LIMIT 1
 SELECT i.product_uuid
 FROM inventories AS i
 GROUP BY i.product_uuid
-ORDER BY RAND()
-LIMIT %d
 ]]
     },
     c = {
@@ -819,8 +783,6 @@ LEFT JOIN inventories AS i
  ON p.id = i.product_id
 WHERE i.product_id IS NULL
 GROUP BY p.id
-ORDER BY RAND()
-LIMIT 50
 ]],
         random_supplier_batch = [[
 SELECT s.id FROM suppliers AS s
@@ -828,24 +790,13 @@ LEFT JOIN inventories AS i
  ON s.id = i.supplier_id
 WHERE i.supplier_id IS NULL
 GROUP BY s.id
-ORDER BY RAND()
-LIMIT 50
 ]],
         random_customer_batch = [[
 SELECT c.id FROM customers AS c
-ORDER BY RAND()
-LIMIT 50
-]],
-        random_customer_external_ids = [[
-SELECT c.uuid FROM customers AS c
-ORDER BY RAND()
-LIMIT 100
 ]],
         random_product_supplier_batch = [[
 SELECT product_id, supplier_id
 FROM inventories AS i
-ORDER BY RAND()
-LIMIT 200
 ]],
         fulfiller_for_product = [[
 SELECT i.supplier_id
@@ -858,8 +809,6 @@ LIMIT 1
 SELECT i.product_id
 FROM inventories AS i
 GROUP BY i.product_id
-ORDER BY RAND()
-LIMIT %d
 ]],
         customer_internal_from_external = [[
 SELECT c.id
@@ -868,6 +817,24 @@ WHERE c.uuid = '%s'
 ]]
     }
 }
+
+function _rand_fn_name()
+    if drv_name == 'mysql' then
+        return 'RAND()'
+    else
+        return 'RANDOM()'
+    end
+end
+
+function _last_insert_id()
+    local _id
+    if drv_name == 'mysql' then
+        _id = con:query_row("SELECT LAST_INSERT_ID()")
+    else
+        _id = con:query_row("SELECT LASTVAL()")
+    end
+    return tonumber(_id)
+end
 
 function init()
     drv = sysbench.sql.driver()
@@ -969,6 +936,11 @@ end
 -- so we should be OK
 function _get_random_customer_batch()
     local query = _select_queries[schema_design]['random_customer_batch']
+    local limit = 50
+    query = query .. string.format([[
+ORDER BY %s
+LIMIT %d
+]], _rand_fn_name(), limit)
     local rs = con:query(query)
     local customers = {}
     for i = 1, rs.nrows do
@@ -1011,6 +983,11 @@ end
 -- creating a bunch of order details for customers during the prepare stage
 function _get_random_product_supplier_batch()
     local query = _select_queries[schema_design]['random_product_supplier_batch']
+    local limit = 200
+    query = query .. string.format([[
+ORDER BY %s
+LIMIT %d
+]], _rand_fn_name(), limit)
     local rs = con:query(query)
     local product_suppliers = {}
     for i = 1, rs.nrows do
@@ -1089,8 +1066,7 @@ function _populate_orders(num_needed)
             order_stmt:execute()
 
             if schema_design ~= "b" then
-                order_id = con:query_row("SELECT LAST_INSERT_ID()")
-                order_id = tonumber(order_id)
+                order_id = _last_insert_id()
             end
 
             -- Now add some items to the order as order_details records
@@ -1118,7 +1094,7 @@ function _populate_orders(num_needed)
                     order_detail_stmt_params[2]:set(product)
                     order_detail_stmt_params[3]:set(supplier)
                     order_detail_stmt_params[4]:set(amount)
-                    order_detail_stmt_params[5]:set(string.format("%10.2f", price))
+                    order_detail_stmt_params[5]:set(price)
                     order_detail_stmt:execute()
                     created_order_details = created_order_details + 1
                 end
@@ -1242,6 +1218,11 @@ end
 -- RANDOM(), but this is only done in the prepare step so we should be OK
 function _get_random_product_batch()
     local query = _select_queries[schema_design]['random_product_batch']
+    local limit = 50
+    query = query .. string.format([[
+ORDER BY %s
+LIMIT %d
+]], _rand_fn_name(), limit)
     rs = con:query(query)
     product_ids = {}
     for i = 1, rs.nrows do
@@ -1256,6 +1237,11 @@ end
 -- RANDOM(), but this is only done in the prepare step so we should be OK
 function _get_random_supplier_batch()
     local query = _select_queries[schema_design]['random_supplier_batch']
+    local limit = 50
+    query = query .. string.format([[
+ORDER BY %s
+LIMIT %d
+]], _rand_fn_name(), limit)
     rs = con:query(query)
     supplier_ids = {}
     for i = 1, rs.nrows do
@@ -1345,7 +1331,12 @@ end
 
 -- Returns a batch of 100 random external customer IDs
 function _get_customer_external_ids()
-    local query = _select_queries[schema_design]['random_customer_external_ids']
+    local query = _select_queries[schema_design]['random_customer_batch']
+    local limit = 100
+    query = query .. string.format([[
+ORDER BY %s
+LIMIT %d
+]], _rand_fn_name(), limit)
     local rs = con:query(query)
     local customers = {}
     for i = 1, rs.nrows do
@@ -1436,7 +1427,10 @@ end
 -- processing the order details.
 function get_products_for_order(num_products)
     local query = _select_queries[schema_design]['products_for_order']
-    query = string.format(query, num_products)
+    query = query .. string.format([[
+ORDER BY %s
+LIMIT %d
+]], _rand_fn_name(), num_products)
     local rs = con:query(query)
     local products = {}
     for i = 1, rs.nrows do
@@ -1491,8 +1485,7 @@ function customer_new_order(customer, products, order_uuid)
     ins_order.statement:execute()
 
     if schema_design ~= "b" then
-        order_id = con:query_row("SELECT LAST_INSERT_ID()")
-        order_id = tonumber(order_id)
+        order_id = _last_insert_id()
     end
 
     for idx, product in ipairs(products) do
@@ -1503,7 +1496,7 @@ function customer_new_order(customer, products, order_uuid)
         ins_order_det.params[2]:set(product)
         ins_order_det.params[3]:set(supplier)
         ins_order_det.params[4]:set(amount)
-        ins_order_det.params[5]:set(string.format("%10.2f", price))
+        ins_order_det.params[5]:set(price)
         ins_order_det.statement:execute()
     end
     commit.statement:execute()
