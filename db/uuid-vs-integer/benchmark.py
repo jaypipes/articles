@@ -201,6 +201,19 @@ SIZES = {
     ],
 }
 
+DB_DRIVER_INFO = {
+    'mysql': (
+        ['systemctl', 'stop', 'mysql'],
+        ['rm', '-rf', '/var/lib/mysql/ib_logfile*'],
+        ['systemctl', 'start', 'mysql'],
+    ),
+    'pgsql': (
+        ['systemctl', 'stop', 'postgresql'],
+        ['rm', '-rf', '/var/lib/mysql/ib_logfile*'],
+        ['systemctl', 'start', 'postgresql'],
+    ),
+}
+
 if __name__ == '__main__':
     run_dir = os.path.join('../..', dir_path)
     result_dir = tempfile.mkdtemp()
@@ -219,24 +232,26 @@ if __name__ == '__main__':
 
     print "Writing to %s" % result_dir
 
+for drv_name, clean_commands in DB_DRIVER_INFO.items():
+    tee("============================== START BENCHMARKS FOR %s )=============================" % drv_name)
     for design, design_description in SCHEMA_DESIGNS.items():
         for size, size_args in SIZES.items():
             base_cmd = [
                 'sysbench',
-                '--mysql-password=sbtest',
+                '--db-driver=%s' % drv_name,
+                '--%s-password=sbtest' % drv_name,
                 '--time=30',
                 '--schema-design=%s' % design,
                 'db/uuid-vs-integer/brick-and-mortar.lua',
             ] + size_args + sys.argv[1:]
-            tee("============================== START BENCH %s [%s] (size: %s)=============================" %
-                (design, design_description, size))
+            tee("============================== START BENCH (%s) %s [%s] (size: %s)=============================" %
+                (drv_name, design, design_description, size))
             tee("Using base command: %s" % " ".join(base_cmd))
             tee("Resetting database for %s (size %s) " % (design, size))
             subprocess.call(base_cmd + ['cleanup'], stdout=result_file)
             tee("Restarting DB server and clearing all logs and data files")
-            subprocess.call(['systemctl', 'stop', 'mysql'], stdout=result_file)
-            subprocess.call(['rm', '-rf', '/var/lib/mysql/ib_logfile*'], stdout=result_file)
-            subprocess.call(['systemctl', 'start', 'mysql'], stdout=result_file)
+            for cleanup_cmd in clean_commands:
+                subprocess.call(cleanup_cmd, stdout=result_file)
             tee("Preparing database for %s (size %s) " % (design, size))
             subprocess.call(base_cmd + ['prepare'], stdout=result_file)
             for scenario in SCENARIOS:
@@ -257,12 +272,12 @@ if __name__ == '__main__':
                     diff = get_mysql_counter_deltas(start, end)
                     res.stats_diff = diff
                     results.append(res)
-            tee("============================== END BENCH %s [%s] (size: %s)=============================" %
-                (design, design_description, size))
+            tee("============================== END BENCH (%s) %s [%s] (size: %s)=============================" %
+                (drv_name, design, design_description, size))
 
     for scenario in SCENARIOS:
         for size in SIZES.keys():
-            csv_filepath = os.path.join(result_dir, 'results-%s-%s.txt' % (scenario, size))
+            csv_filepath = os.path.join(result_dir, 'results-%s-%s-%s.txt' % (drv_name, scenario, size))
             csv_file = open(csv_filepath, 'w+b')
             csv_writer = csv.writer(csv_file)
             csv_writer.writerow(["design", "1 thread", "2 threads", "4 threads", "8 threads"])
