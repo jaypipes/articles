@@ -33,8 +33,6 @@ impact of using one strategy over another.
     1. [Hardware setup](#hardware-setup)
     1. [Benchmark variants](#benchmark-variants)
     1. [DB setup](#db-setup)
-        1. [MySQL Server](#mysql-server)
-        1. [PostgreSQL](#postgresql)
 1. [Benchmark results](#benchmark-results)
     1. [New customer order](#new-customer-order-results)
     1. [Lookup customer orders](#lookup-customer-order-results)
