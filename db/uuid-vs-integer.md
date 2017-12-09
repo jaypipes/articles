@@ -96,6 +96,11 @@ column types, with the dashes kept in the stored value, is the most common
 representation of UUIDs in a MySQL database, and that's what I chose to compare
 to.
 
+Since PostgreSQL has a native UUID type, I used that column type and since
+sysbench doens't currently support native UUID type binding, I used the `CAST(?
+AS UUID)` expression to convert the string UUID to a native PostgreSQL UUID
+type where necessary.
+
 ## Schema design strategies
 
 There are three different strategies for database schema design that we wish to
@@ -358,7 +363,7 @@ auto-incrementing primary keys has on sequential read performance.
 
 ## Test configuration
 
-### Hardware setup
+### Hardware and operating system setup
 
 Some information about the hardware and platform used for the benchmarking:
 
@@ -386,7 +391,7 @@ various operations.
 
 Of course, 1M order detail records isn't a "large" database at all. However,
 the sizing here is only relative to each other. The medium database is
-Approximately an order of magnitude greater than the small database. And the
+approximately an order of magnitude greater than the small database. And the
 large database is another order of magnitude greater than the medium.
 
 It's important to note that for the MySQL tests, the "large" database size
@@ -404,16 +409,13 @@ performance of our schema design strategies.
 
 The database server configurations we test are the following:
 
-* MySQL Server 5.7 with InnoDB storage engine
-* PostgreSQL 9.6
+* MySQL Server 5.7.19-17 using the default InnoDB storage engine
+* PostgreSQL 9.5.7
 
-#### MySQL Server
-
-TODO
-
-#### PostgreSQL
-
-TODO
+The DB configurations were completely stock. I made no adjustments for the
+purposes of tuning or anything else. The MySQL `innodb_buffer_pool_size` was
+128MB (the default). Besides needing to create a database user in MySQL and
+PostgreSQL, I issued zero SQL statements outside of the benchmark's statements.
 
 ## Benchmark results
 
