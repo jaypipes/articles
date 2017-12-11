@@ -443,6 +443,8 @@ tables.
 | B (UUID PKs only)                 |       131.45 |      293.09 |      650.58 |     1160.55 |
 | C (auto-increment PK, ext UUID)   |       164.73 |      418.32 |      775.80 |     1389.74 |
 
+![new customer orders - MySQL - small DB](uuid-vs-integer/images/new-customer-orders-mysql-small.png "MySQL - Small DB - New customer order transactions per second")
+
 ##### TPS by number of threads and schema design (Medium DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
