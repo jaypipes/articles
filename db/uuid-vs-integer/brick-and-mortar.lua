@@ -1388,7 +1388,7 @@ LIMIT %d
     for i = 1, rs.nrows do
         row = rs:fetch_row()
         customer = row[1]
-        if schema_design ~= "b" then
+        if schema_design == "a" then
             customer = tonumber(customer)
         end
         table.insert(customers, customer)
@@ -1499,8 +1499,14 @@ function _populate_orders(num_needed)
                 order_stmt_params[2]:set(status)
             else
                 order_id = uuid.new()
+                -- For schema design "c", the tradeoff is we need to do a secondary key
+                -- lookup on the external customer UUID to get the internal customer ID
+                customer_id = customer
+                if schema_design == "c" then
+                    customer_id = get_customer_internal_from_external(customer)
+                end
                 order_stmt_params[1]:set(order_id)
-                order_stmt_params[2]:set(customer)
+                order_stmt_params[2]:set(customer_id)
                 order_stmt_params[3]:set(status)
             end
             created_orders = created_orders + 1

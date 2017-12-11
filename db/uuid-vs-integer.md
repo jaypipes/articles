@@ -417,7 +417,14 @@ PostgreSQL, I issued zero SQL statements outside of the benchmark's statements.
 
 ## Benchmark results
 
-#### New customer order results
+Below, for each data access/write scenario, I give the results for the various
+database sizes tested for both MySQL and PostgreSQL. Note that I'm not
+comparing MySQL and PostgreSQL here -- that's not the point of interest in
+these benchmarks. Instead, I'm interested in seeing the impact on each database
+server s performance when using UUIDs vs auto-incrementing integers for primary
+keys.
+
+### New customer order results
 
 Here are the number of transactions per second that were possible (for N
 concurrent threads) for the `customer_new_order` scenario. These transactions
@@ -426,31 +433,59 @@ be created per second. This event entails reads from a number of tables,
 including `products` and `product_price_history` as well as writes to multiple
 tables.
 
+#### MySQL
+
 ##### TPS by number of threads and schema design (Small DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |        61.22 |      377.84 |      792.60 |     1565.71 |
-| B (UUID PKs only)                 |        54.64 |      278.92 |      602.08 |     1308.86 |
-| C (auto-increment PK, ext UUID)   |        62.22 |      379.17 |      757.58 |     1386.34 |
+| A (auto-increment PKs no UUID)    |        193.33 | 416.24 | 854.21 | 1646.86 |
+| B (UUID PKs only)                 |        131.45 | 293.09 | 650.58 | 1160.55 |
+| C (auto-increment PK, ext UUID)   |        164.73 | 418.32 | 775.8 | 1389.74 |
 
 ##### TPS by number of threads and schema design (Medium DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |        59.52 |      332.57 |      729.49 |     1370.30 |
-| B (UUID PKs only)                 |        53.85 |      249.19 |      549.65 |     1111.76 |
-| C (auto-increment PK, ext UUID)   |        59.43 |      313.03 |      661.15 |     1383.46 |
+| A (auto-increment PKs no UUID)    |        138.74 | 367.78 | 718.83 | 1417.25 |
+| B (UUID PKs only)                 |        114.87 | 260.26 | 565.07 | 1027.15 |
+| C (auto-increment PK, ext UUID)   |        121.28 | 333.61 | 696.1 | 1258.69 |
 
 ##### TPS by number of threads and schema design (Large DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |        48.01 |      121.74 |      342.26 |      761.40 |
-| B (UUID PKs only)                 |        37.69 |      158.91 |      156.18 |      202.04 |
-| C (auto-increment PK, ext UUID)   |        39.12 |      118.95 |      332.95 |      770.17 |
+| A (auto-increment PKs no UUID)    |        46.39 | 112.8 | 333.28 | 586.64 |
+| B (UUID PKs only)                 |        66.06 | 162.16 | 160.23 | 170.11 |
+| C (auto-increment PK, ext UUID)   |        49.84 | 116.42 | 326.95 | 746.46 |
 
-#### Order counts per status results
+#### PostgreSQL
+
+##### TPS by number of threads and schema design (Small DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        88.19 | 181.25 | 401.69 | 759.64 |
+| B (UUID PKs only)                 |        85.04 | 184.81 | 427.15 | 723.35 |
+| C (auto-increment PK, ext UUID)   |        96.41 | 175.39 | 386.38 | 688.36 |
+
+##### TPS by number of threads and schema design (Medium DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        85.26 | 167.98 | 370.44 | 717.92 |
+| B (UUID PKs only)                 |        80.66 | 167.91 | 371.69 | 689.94 |
+| C (auto-increment PK, ext UUID)   |        81.99 | 166.19 | 330.37 | 650.61 |
+
+##### TPS by number of threads and schema design (Large DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        66.07 | 126.03 | 240.17 | 480.51 |
+| B (UUID PKs only)                 |        65.23 | 124.42 | 239.46 | 457.44 |
+| C (auto-increment PK, ext UUID)   |        69.72 | 129.06 | 234.26 | 451.71 |
+
+### Order counts per status results
 
 Here are the number of transactions per second that were possible (for N
 concurrent threads) for the `order_counts_by_status` scenario. These
@@ -461,31 +496,59 @@ This `SELECT` statement involved an aggregate query against a single table
 using a secondary index on the column involved in the grouping expression
 (`orders.status`).
 
+#### MySQL
+
 ##### TPS by number of threads and schema design (Small DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |      1632.98 |     3352.06 |     6914.88 |    11190.83 |
-| B (UUID PKs only)                 |      1528.93 |     3036.75 |     6442.87 |    10515.95 |
-| C (auto-increment PK, ext UUID)   |      1532.73 |     2989.54 |     6446.44 |    10422.89 |
+| A (auto-increment PKs no UUID)    |      1615.89 | 3075.88 | 7198.23 | 11203.62 |
+| B (UUID PKs only)                 |      1549.78 | 2887.22 | 6702.8 | 10635.49 |
+| C (auto-increment PK, ext UUID)   |      1544.83 | 2873.24 | 6545.08 | 10598.03 |
 
 ##### TPS by number of threads and schema design (Nedium DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |       577.60 |     1150.79 |     2321.99 |     3479.98 |
-| B (UUID PKs only)                 |       533.64 |     1055.72 |     2131.53 |     3289.27 |
-| C (auto-increment PK, ext UUID)   |       556.29 |     1081.00 |     2247.74 |     3394.42 |
+| A (auto-increment PKs no UUID)    |       584.69 | 1119.66 | 2287.99 | 3643.57 |
+| B (UUID PKs only)                 |       556.03 | 1062.13 | 2179.67 | 3388.88 |
+| C (auto-increment PK, ext UUID)   |       556.27 | 1072.93 | 2114.73 | 3356.61 |
+
+##### TPS by number of threads and schema design (Large DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        46.92 | 93.21 | 174.94 | 270.34 |
+| B (UUID PKs only)                 |        41.86 | 82.61 | 157.42 | 248.07 |
+| C (auto-increment PK, ext UUID)   |        43.69 | 87.07 | 167.99 | 244.56 |
+
+#### PostgreSQL
+
+##### TPS by number of threads and schema design (Small DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |      1254.54 | 2996.22 | 5668.34 | 10450.7 |
+| B (UUID PKs only)                 |      1439.05 | 2849.36 | 5468.08 | 10473.11 |
+| C (auto-increment PK, ext UUID)   |      1413.96 | 2804.26 | 5845.19 | 10137.1 |
 
 ##### TPS by number of threads and schema design (Nedium DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |        46.60 |       91.93 |      179.60 |      269.33 |
-| B (UUID PKs only)                 |        41.94 |       81.89 |      164.33 |      241.40 |
-| C (auto-increment PK, ext UUID)   |        42.30 |       83.96 |      165.03 |      227.74 |
+| A (auto-increment PKs no UUID)    |       466.88 | 946.12 | 2043.78 | 3406.51 |
+| B (UUID PKs only)                 |       457.35 | 872.31 | 1953.07 | 3412.37 |
+| C (auto-increment PK, ext UUID)   |       459.43 | 885.15 | 2074.98 | 3341.03 |
 
-#### Lookup customer orders results
+##### TPS by number of threads and schema design (Large DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        43.38 | 84.24 | 158.37 | 249.28 |
+| B (UUID PKs only)                 |        43.37 | 81.41 | 165.51 | 246.39 |
+| C (auto-increment PK, ext UUID)   |        42.48 | 81.51 | 160.56 | 238.72 |
+
+### Lookup customer orders results
 
 Here are the number of transactions per second that were possible (for N
 concurrent threads) for the `lookup_orders_by_customer` scenario. These
@@ -496,31 +559,59 @@ customer external identifier (either auto-incrementing integer key or UUID)
 along with an aggregate operation across a set of records in the
 `order_details` table via a multi-table `JOIN` operation.
 
+#### MySQL
+
 ##### TPS by number of threads and schema design (Small DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |      4149.76 |    10523.92 |    22957.46 |    40242.01 |
-| B (UUID PKs only)                 |      3193.05 |    10760.80 |    21964.98 |    38493.70 |
-| C (auto-increment PK, ext UUID)   |      3975.79 |     9600.54 |    19771.80 |    35787.74 |
+| A (auto-increment PKs no UUID)    |      5930.91 | 11430.37 | 23525.73 | 40916.91 |
+| B (UUID PKs only)                 |      5266.74 | 10396.43 | 22760.17 | 39067.47 |
+| C (auto-increment PK, ext UUID)   |      4901.82 | 10004.68 | 20750.32 | 36366.61 |
 
 ##### TPS by number of threads and schema design (Nedium DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |      4554.44 |     9714.10 |    20963.30 |    36801.88 |
-| B (UUID PKs only)                 |      5049.82 |     9379.45 |    20216.94 |    34839.37 |
-| C (auto-increment PK, ext UUID)   |      4169.49 |     8455.55 |    18202.93 |    32877.63 |
+| A (auto-increment PKs no UUID)    |      5097.35 | 9967.02 | 21322.79 | 37746.48 |
+| B (UUID PKs only)                 |      4706.99 | 9606.48 | 20007.97 | 35569.34 |
+| C (auto-increment PK, ext UUID)   |      4182.2 | 8869.6 | 18231.92 | 33571.22 |
+
+##### TPS by number of threads and schema design (Large DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |      2404.02 | 4785.85 | 10014.97 | 18708.46 |
+| B (UUID PKs only)                 |      1848.24 | 3812.25 | 6326.06 | 8994.89 |
+| C (auto-increment PK, ext UUID)   |      2380.97 | 4582.94 | 9561.05 | 17585.76 |
+
+#### PostgreSQL
+
+##### TPS by number of threads and schema design (Small DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |      5535.84 | 10517.41 | 23550.26 | 40626.9 |
+| B (UUID PKs only)                 |      5398.67 | 10588.56 | 22427.03 | 40596.57 |
+| C (auto-increment PK, ext UUID)   |      802.29 | 1710.87 | 4067.06 | 6856.1 |
 
 ##### TPS by number of threads and schema design (Nedium DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |      2275.61 |     4365.19 |     8805.44 |    16472.31 |
-| B (UUID PKs only)                 |      1729.42 |     3464.81 |     5784.94 |     8355.06 |
-| C (auto-increment PK, ext UUID)   |      2184.99 |     4112.93 |     8403.43 |    15551.28 |
+| A (auto-increment PKs no UUID)    |      4950.84 | 9455.83 | 21038.52 | 36402.19 |
+| B (UUID PKs only)                 |      4877.4 | 9420.81 | 20228.23 | 36158.88 |
+| C (auto-increment PK, ext UUID)   |      813.73 | 1677.86 | 3931.42 | 6702.27 |
 
-#### Lookup most popular items results
+##### TPS by number of threads and schema design (Large DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |      1920.31 | 4170.13 | 7712.94 | 15930.49 |
+| B (UUID PKs only)                 |      1901.57 | 4093.66 | 7169.58 | 14934.87 |
+| C (auto-increment PK, ext UUID)   |      656.69 | 1388.59 | 2946.66 | 5192.11 |
+
+### Lookup most popular items results
 
 Here are the number of transactions per second that were possible (for N
 concurrent threads) for the `lookup_most_popular_items` scenario. These
@@ -530,29 +621,57 @@ the most. It involves a full table scan of all records in the `order_details`
 table and `JOIN` operations to multiple tables including the `products` and
 `suppliers` tables.
 
+#### MySQL
+
 ##### TPS by number of threads and schema design (Small DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |        52.48 |       96.96 |      161.49 |      278.16 |
-| B (UUID PKs only)                 |        38.14 |       72.71 |      121.51 |      204.50 |
-| C (auto-increment PK, ext UUID)   |        50.85 |       97.47 |       161.1 |      272.19 |
+| A (auto-increment PKs no UUID)    |        59.81 | 113.44 | 196.46 | 312.38 |
+| B (UUID PKs only)                 |        43.34 | 83.35 | 132.46 | 230.66 |
+| C (auto-increment PK, ext UUID)   |        64.11 | 119.79 | 187.27 | 325.28 |
 
 ##### TPS by number of threads and schema design (Medium DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |        10.49 |       19.55 |       35.64 |       55.61 |
-| B (UUID PKs only)                 |         7.84 |       15.01 |       28.45 |       43.09 |
-| C (auto-increment PK, ext UUID)   |        10.86 |       20.67 |       37.86 |       56.55 |
+| A (auto-increment PKs no UUID)    |        12.49 | 23.14 | 38.5 | 64.81 |
+| B (UUID PKs only)                 |        9.43 | 17.69 | 33.69 | 51.24 |
+| C (auto-increment PK, ext UUID)   |        12.06 | 22.52 | 41.17 | 63.02 |
 
 ##### TPS by number of threads and schema design (Large DB size)
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
-| A (auto-increment PKs no UUID)    |         0.15 |        0.28 |        0.50 |        0.71 |
-| B (UUID PKs only)                 |         0.05 |        0.09 |        0.12 |        0.10 |
-| C (auto-increment PK, ext UUID)   |         0.15 |        0.28 |        0.49 |        0.74 |
+| A (auto-increment PKs no UUID)    |        0.16 | 0.29 | 0.5 | 0.68 |
+| B (UUID PKs only)                 |        0.05 | 0.09 | 0.11 | 0.11 |
+| C (auto-increment PK, ext UUID)   |        0.16 | 0.3 | 0.52 | 0.73 |
+
+#### PostgreSQL
+
+##### TPS by number of threads and schema design (Small DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        87.55 | 173.34 | 337.37 | 512.03 |
+| B (UUID PKs only)                 |        78.98 | 156.74 | 295.9 | 446.05 |
+| C (auto-increment PK, ext UUID)   |        87.79 | 176.07 | 338.43 | 514.26 |
+
+##### TPS by number of threads and schema design (Medium DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |        19.12 | 37.78 | 69.72 | 106.62 |
+| B (UUID PKs only)                 |        13.51 | 26.21 | 48.32 | 71.11 |
+| C (auto-increment PK, ext UUID)   |        19.13 | 37.65 | 69.78 | 106.21 |
+
+##### TPS by number of threads and schema design (Large DB size)
+
+| Schema design                     |       1      |      2      |      4      |      8      |
+| --------------------------------- | ------------:| -----------:| -----------:| -----------:|
+| A (auto-increment PKs no UUID)    |       0.38 | 0.68 | 1.35 | 1.95 |
+| B (UUID PKs only)                 |       0.3 | 0.57 | 1.03 | 1.5 |
+| C (auto-increment PK, ext UUID)   |       0.38 | 0.74 | 1.32 | 2.0 |
 
 ## Conclusions
 
