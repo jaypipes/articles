@@ -1,0 +1,4 @@
+design,1 thread,2 threads,4 threads,8 threads
+a,0.38,0.68,1.35,1.95
+b,0.3,0.57,1.03,1.5
+c,0.38,0.74,1.32,2.0
