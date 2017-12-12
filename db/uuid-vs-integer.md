@@ -1,24 +1,32 @@
 # Investigation into UUID vs. integer database performance
 
-There have been a number of articles over the past five years or so that
+There have [been](http://kccoder.com/mysql/uuid-vs-int-insert-performance/)
+[a](https://cjsavage.com/guides/mysql/insert-perf-uuid-vs-ordered-uuid-vs-int-pk.html)
+[number](https://tomharrisonjr.com/uuid-or-guid-as-primary-keys-be-careful-7b2aa3dcb439)
+[of](http://krow.livejournal.com/497839.html) [articles](https://www.percona.com/blog/2007/03/13/to-uuid-or-not-to-uuid/)
+over the past ten years or so that
 describe some of the benefits, costs and potential pitfalls of using UUID
 values as primary keys for database tables instead of the more traditional
 auto-incrementing integer primary key.
 
 Each of these articles tends to include some interesting graphs, but nearly all
-of them focus on two metrics for benchmark data: the speed of raw `INSERT`
+of them focus on two metrics for benchmark data: the raw speed of `INSERT`
 statements and the size of the table data and index data segments. While these
 metrics are both very important, focusing on them exclusively means that there
 are some critical points left out from the overall discussion of application
 performance and query efficiency.
 
-This article aims to provide a thorough comparison of UUID and integer field
-performance. We'll be examining schemas that represent real-world application
-scenarios and run a series of comparative benchmarks that demonstrate the
-impact of using one strategy over another.
+In addition, most of the articles I've read look strictly at MySQL (and InnoDB
+storage engine) performance and don't touch the other great open source
+database server, PostgreSQL.
+
+In this article, I  aim to provide a thorough data-backed comparison of UUID
+and integer field performance for both MySQL and PostgreSQL. We'll be examining
+a schema that represents a real-world application and run a series of
+comparative benchmark scenarios that demonstrate the impact of using one
+strategy over another.
 
 1. [Overview](#overview)
-    1. [Brick-and-mortar store application](#brick-and-mortar-store-application)
 1. [UUID column type considerations](#uuid-column-type-considerations)
 1. [Schema design strategies](#schema-design-strategies)
     1. [A: Auto-inc integer PK, no UUIDs](#schema-design-a-auto-incrementing-integer-primary-key-no-uuids)
@@ -57,19 +65,11 @@ arrangement with some set of suppliers.
 
 When it comes to the performance of any particular query, it's important to
 consider the query in the context of the application in which it runs. That's
-why this article uses two archetypal applications in order to illustrate
-real-world application query patterns.
-
-We aim to answer a series of questions about the impact of using UUIDs versus
-integer columns in the underlying database schema. These questions will examine
-differences in read and write query performance as well as implications to
-scale-out and partitioning.
-
-### Brick and mortar store application
-
-I've tried as much as possible to do the comparison tests and benchmarks in
-this article against a database schema that represents a more realistic
-application than one used by more synthetic benchmarks done to date.
+why this article uses an archetypal point-of-sale application in order to
+illustrate real-world application query patterns. Instead of relying on
+synthetic tables that don't represent actual data access patterns, we'll
+examine queries that would actually be run against a real application and
+examine the impact of using UUIDs versus integer columns has on these queries.
 
 To explore all the data access patterns I wanted to explore, I created a
 "brick-and-mortar" store point-of-sale application. This application is all
@@ -80,7 +80,7 @@ customer, suppliers, products, etc.
 
 ## UUID column type considerations
 
-For UUID generation, I used a Lua module that, with some hacking to support
+For UUID generation, I used a [Lua module](uuid-vs-integer/uuid.lua) that, with [some hacking](uuid-vs-integer/brick-and-mortar.lua#L1817-L1820) to support
 thread-safe operations, generated UUIDs in a consistent fashion for each thread
 executing. This allowed me to compare the impact of UUID vs integer primary
 keys with permutations in initial database size.
@@ -95,9 +95,9 @@ representation of UUIDs in a MySQL database, and that's what I chose to compare
 to.
 
 Since PostgreSQL has a native UUID type, I used that column type and since
-sysbench doens't currently support native UUID type binding, I used the `CAST(?
-AS UUID)` expression to convert the string UUID to a native PostgreSQL UUID
-type where necessary.
+sysbench doesn't currently support native UUID parameter type binding, I used
+the `CAST(?  AS UUID)` expression to convert the string UUID to a native
+PostgreSQL UUID type where necessary.
 
 ## Schema design strategies
 
@@ -200,10 +200,9 @@ CREATE TABLE products (
 
 ## Application scenarios
 
-As mentioned above, I wanted to show the impact of these schema designs/choices
-in **real-world applications**. To that point, I developed a number of
-benchmark scenarios that I thought represented some realistic data access and
-data write patterns.
+I wanted to show the impact of these schema designs/choices in **real-world
+applications**. To that point, I developed a number of benchmark scenarios that
+I thought represented some realistic data access and data write patterns.
 
 For the brick-and-mortar application, I came up with these scenarios:
 
@@ -399,11 +398,10 @@ exhausting the buffer pool and needing to spool records off disk in some of the
 benchmarks below. You will see the impact of the database design and column
 type choices on that unfortunate situation as well!
 
-### DB configuration
+The benchmark script was written in Lua and is [included](uuid-vs-integer/brick-and-mortar.lua) in this article
+repository for anyone to take a look at and critique.
 
-This article runs a series of tests against a set of open source database
-server configurations to see if there are noteworthy differences between the
-performance of our schema design strategies.
+### DB configuration
 
 The database server configurations we test are the following:
 
@@ -423,6 +421,15 @@ comparing MySQL and PostgreSQL here -- that's not the point of interest in
 these benchmarks. Instead, I'm interested in seeing the impact on each database
 server s performance when using UUIDs vs auto-incrementing integers for primary
 keys.
+
+Also note that I did no tuning or optimization whatsoever for either MySQL or
+PostgreSQL. Again, the point is to identify the impact of primary key column
+type choice on the performance of a variety of data write and read patterns.
+The point of this benchmark isn't to tune a particular database for a specific
+workload or compare MySQL to PostgreSQL.
+
+The CSV files containing the parsed results of the sysbench runs are [available](uuid-vs-integer/results/)
+in this article git repository.
 
 ### New customer order results
 
