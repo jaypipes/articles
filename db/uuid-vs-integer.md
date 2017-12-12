@@ -74,7 +74,7 @@ examine the impact of using UUIDs versus integer columns has on these queries.
 To explore all the data access patterns I wanted to explore, I created a
 "brick-and-mortar" store point-of-sale application. This application is all
 about recording information for an imaginary home-goods store: orders,
-customer, suppliers, products, etc.
+customers, suppliers, products, etc.
 
 ![brick-and-mortar store E-R diagram](uuid-vs-integer/images/brick-and-mortar-e-r.png "Entity-relationship diagram for brick-and-mortar store application")
 
@@ -264,7 +264,12 @@ table (customer).
 This query looks like this for schema design "A":
 
 ```sql
-SELECT o.id, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
+SELECT
+ o.id,
+ o.created_on,
+ o.status,
+ COUNT(*) AS num_items,
+ SUM(od.quantity * od.price) AS total_amount
 FROM orders AS o
 JOIN order_details AS od
  ON o.id = od.order_id
@@ -276,7 +281,12 @@ ORDER BY o.created_on DESC
 for schema design "B", the query is as follows:
 
 ```sql
-SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
+SELECT
+ o.uuid,
+ o.created_on,
+ o.status,
+ COUNT(*) AS num_items,
+ SUM(od.quantity * od.price) AS total_amount
 FROM orders AS o
 JOIN order_details AS od
  ON o.uuid = od.order_uuid
@@ -288,7 +298,12 @@ ORDER BY o.created_on DESC
 and finally, for schema design "C", the query looks like this:
 
 ```sql
-SELECT o.uuid, o.created_on, o.status, COUNT(*) AS num_items, SUM(od.quantity * od.price) AS total_amount
+SELECT
+ o.uuid,
+ o.created_on,
+ o.status,
+ COUNT(*) AS num_items,
+ SUM(od.quantity * od.price) AS total_amount
 FROM orders AS o
 JOIN order_details AS od
  ON o.id = od.order_id
@@ -340,7 +355,11 @@ products.
 The `SELECT` expression for this query looks like this:
 
 ```sql
-SELECT p.name, s.name, COUNT(DISTINCT o.id) AS included_in_orders, SUM(od.quantity * od.price) AS total_purchased
+SELECT
+ p.name,
+ s.name,
+ COUNT(DISTINCT o.id) AS included_in_orders,
+ SUM(od.quantity * od.price) AS total_purchased
 FROM orders AS o
 JOIN order_details AS od
  ON o.id = od.order_id
@@ -374,10 +393,10 @@ the DB server of course) were running on the machine.
 ### Benchmark variants
 
 All benchmark runs were done using sysbench 1.0.12, with **_30 seconds_** run
-time for each scenario variation. All scenarios that write records to a table
-were run *after* scenarios that only read records. This was to ensure
-consistent results that were able to be compared between different initial
-sizes of database.
+time for each scenario variation. The one scenario that writes records to a
+table (`customer_new_order`) was run *after* the scenarios that only read
+records. This was to ensure consistent results that were able to be compared
+between different initial sizes of database.
 
 For the brick-and-mortar application, I tested three sizes -- "small", "medium"
 and "large" -- of databases. The "small" size was pre-loaded with approximately
@@ -391,7 +410,7 @@ the sizing here is only relative to each other. The medium database is
 approximately an order of magnitude greater than the small database. And the
 large database is another order of magnitude greater than the medium.
 
-It's important to note that for the MySQL tests, the "large" database size
+It's worth noting that for the MySQL tests, the "large" database size
 represented an `order_details` table that was greater than the total size of
 the InnoDB buffer pool used by the server (128MB). You will note the impact of
 exhausting the buffer pool and needing to spool records off disk in some of the
@@ -408,19 +427,22 @@ The database server configurations we test are the following:
 * MySQL Server 5.7.19-17 using the default InnoDB storage engine
 * PostgreSQL 9.5.7
 
-The DB configurations were completely stock. I made no adjustments for the
-purposes of tuning or anything else. The MySQL `innodb_buffer_pool_size` was
-128MB (the default). Besides needing to create a database user in MySQL and
-PostgreSQL, I issued zero SQL statements outside of the benchmark's statements.
+**The DB configurations were completely stock**.
+
+I made no adjustments for the purposes of tuning or anything else. The MySQL
+`innodb_buffer_pool_size` was 128MB (the default). Besides needing to create a
+database user in MySQL and PostgreSQL, I issued zero SQL statements outside of
+the benchmark's statements.
 
 ## Benchmark results
 
 Below, for each data access/write scenario, I give the results for the various
-database sizes tested for both MySQL and PostgreSQL. Note that I'm not
-comparing MySQL and PostgreSQL here -- that's not the point of interest in
-these benchmarks. Instead, I'm interested in seeing the impact on each database
-server s performance when using UUIDs vs auto-incrementing integers for primary
-keys.
+database sizes tested for both MySQL and PostgreSQL.
+
+Note that **I'm not comparing MySQL and PostgreSQL here**. That's not the point
+of interest in these benchmarks. Instead, I'm interested in seeing the impact
+on each database server s performance when using UUIDs vs auto-incrementing
+integers for primary keys.
 
 Also note that I did no tuning or optimization whatsoever for either MySQL or
 PostgreSQL. Again, the point is to identify the impact of primary key column
@@ -434,15 +456,17 @@ in this article git repository.
 ### New customer order results
 
 Here are the number of transactions per second that were possible (for N
-concurrent threads) for the `customer_new_order` scenario. These transactions
+concurrent threads) for the [`customer_new_order`](#new-customer-order) scenario. These transactions
 are the number of new customer orders (including all order details) that could
 be created per second. This event entails reads from a number of tables,
 including `products` and `product_price_history` as well as writes to multiple
-tables.
+tables within a single transaction.
 
 #### MySQL
 
 ##### TPS by number of threads and schema design (Small DB size)
+
+![New customer orders - MySQL - small DB](uuid-vs-integer/images/customer_new_order-mysql-small.png "MySQL - Small DB - New customer order transactions per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -450,9 +474,9 @@ tables.
 | B (UUID PKs only)                 |       131.45 |      293.09 |      650.58 |     1160.55 |
 | C (auto-increment PK, ext UUID)   |       164.73 |      418.32 |      775.80 |     1389.74 |
 
-![New customer orders - MySQL - small DB](uuid-vs-integer/images/customer_new_order-mysql-small.png "MySQL - Small DB - New customer order transactions per second")
-
 ##### TPS by number of threads and schema design (Medium DB size)
+
+![New customer orders - MySQL - medium DB](uuid-vs-integer/images/customer_new_order-mysql-medium.png "MySQL - Medium DB - New customer order transactions per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -460,9 +484,9 @@ tables.
 | B (UUID PKs only)                 |       114.87 |      260.26 |      565.07 |     1027.15 |
 | C (auto-increment PK, ext UUID)   |       121.28 |      333.61 |      696.10 |     1258.69 |
 
-![New customer orders - MySQL - medium DB](uuid-vs-integer/images/customer_new_order-mysql-medium.png "MySQL - Medium DB - New customer order transactions per second")
-
 ##### TPS by number of threads and schema design (Large DB size)
+
+![New customer orders - MySQL - large DB](uuid-vs-integer/images/customer_new_order-mysql-large.png "MySQL - Large DB - New customer order transactions per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -470,11 +494,11 @@ tables.
 | B (UUID PKs only)                 |        66.06 |      162.16 |      160.23 |      170.11 |
 | C (auto-increment PK, ext UUID)   |        49.84 |      116.42 |      326.95 |      746.46 |
 
-![New customer orders - MySQL - large DB](uuid-vs-integer/images/customer_new_order-mysql-large.png "MySQL - Large DB - New customer order transactions per second")
-
 #### PostgreSQL
 
 ##### TPS by number of threads and schema design (Small DB size)
+
+![New customer orders - PostgreSQL - small DB](uuid-vs-integer/images/customer_new_order-pgsql-small.png "PostgreSQL - Small DB - New customer order transactions per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -482,9 +506,9 @@ tables.
 | B (UUID PKs only)                 |        85.04 |      184.81 |      427.15 |      723.35 |
 | C (auto-increment PK, ext UUID)   |        96.41 |      175.39 |      386.38 |      688.36 |
 
-![New customer orders - PostgreSQL - small DB](uuid-vs-integer/images/customer_new_order-pgsql-small.png "PostgreSQL - Small DB - New customer order transactions per second")
-
 ##### TPS by number of threads and schema design (Medium DB size)
+
+![New customer orders - PostgreSQL - medium DB](uuid-vs-integer/images/customer_new_order-pgsql-medium.png "PostgreSQL - Medium DB - New customer order transactions per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -492,17 +516,15 @@ tables.
 | B (UUID PKs only)                 |        80.66 |      167.91 |      371.69 |      689.94 |
 | C (auto-increment PK, ext UUID)   |        81.99 |      166.19 |      330.37 |      650.61 |
 
-![New customer orders - PostgreSQL - medium DB](uuid-vs-integer/images/customer_new_order-pgsql-medium.png "PostgreSQL - Medium DB - New customer order transactions per second")
-
 ##### TPS by number of threads and schema design (Large DB size)
+
+![New customer orders - PostgreSQL - large DB](uuid-vs-integer/images/customer_new_order-pgsql-large.png "PostgreSQL - Large DB - New customer order transactions per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |        66.07 |      126.03 |      240.17 |      480.51 |
 | B (UUID PKs only)                 |        65.23 |      124.42 |      239.46 |      457.44 |
 | C (auto-increment PK, ext UUID)   |        69.72 |      129.06 |      234.26 |      451.71 |
-
-![New customer orders - PostgreSQL - large DB](uuid-vs-integer/images/customer_new_order-pgsql-large.png "PostgreSQL - Large DB - New customer order transactions per second")
 
 ### Order counts per status results
 
@@ -519,15 +541,17 @@ using a secondary index on the column involved in the grouping expression
 
 ##### TPS by number of threads and schema design (Small DB size)
 
+![Order counts by status - MySQL - small DB](uuid-vs-integer/images/order_counts_by_status-mysql-small.png "MySQL - Small DB - Order counts by status queries per second")
+
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |      1615.89 |     3075.88 |     7198.23 |    11203.62 |
 | B (UUID PKs only)                 |      1549.78 |     2887.22 |     6702.80 |    10635.49 |
 | C (auto-increment PK, ext UUID)   |      1544.83 |     2873.24 |     6545.08 |    10598.03 |
 
-![Order counts by status - MySQL - small DB](uuid-vs-integer/images/order_counts_by_status-mysql-small.png "MySQL - Small DB - Order counts by status queries per second")
+##### TPS by number of threads and schema design (Medium DB size)
 
-##### TPS by number of threads and schema design (Nedium DB size)
+![Order counts by status - MySQL - medium DB](uuid-vs-integer/images/order_counts_by_status-mysql-medium.png "MySQL - Medium DB - Order counts by status queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -535,9 +559,9 @@ using a secondary index on the column involved in the grouping expression
 | B (UUID PKs only)                 |       556.03 |     1062.13 |     2179.67 |     3388.88 |
 | C (auto-increment PK, ext UUID)   |       556.27 |     1072.93 |     2114.73 |     3356.61 |
 
-![Order counts by status - MySQL - medium DB](uuid-vs-integer/images/order_counts_by_status-mysql-medium.png "MySQL - Medium DB - Order counts by status queries per second")
-
 ##### TPS by number of threads and schema design (Large DB size)
+
+![Order counts by status - MySQL - large DB](uuid-vs-integer/images/order_counts_by_status-mysql-large.png "MySQL - Large DB - Order counts by status queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -545,11 +569,11 @@ using a secondary index on the column involved in the grouping expression
 | B (UUID PKs only)                 |        41.86 |       82.61 |      157.42 |      248.07 |
 | C (auto-increment PK, ext UUID)   |        43.69 |       87.07 |      167.99 |      244.56 |
 
-![Order counts by status - MySQL - large DB](uuid-vs-integer/images/order_counts_by_status-mysql-large.png "MySQL - Large DB - Order counts by status queries per second")
-
 #### PostgreSQL
 
 ##### TPS by number of threads and schema design (Small DB size)
+
+![Order counts by status - PostgreSQL - small DB](uuid-vs-integer/images/order_counts_by_status-pgsql-small.png "PostgreSQL - Small DB - Order counts by status queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -557,9 +581,9 @@ using a secondary index on the column involved in the grouping expression
 | B (UUID PKs only)                 |      1439.05 |     2849.36 |     5468.08 |    10473.11 |
 | C (auto-increment PK, ext UUID)   |      1413.96 |     2804.26 |     5845.19 |    10137.10 |
 
-![Order counts by status - PostgreSQL - small DB](uuid-vs-integer/images/order_counts_by_status-pgsql-small.png "PostgreSQL - Small DB - Order counts by status queries per second")
+##### TPS by number of threads and schema design (Medium DB size)
 
-##### TPS by number of threads and schema design (Nedium DB size)
+![Order counts by status - PostgreSQL - medium DB](uuid-vs-integer/images/order_counts_by_status-pgsql-medium.png "PostgreSQL - Medium DB - Order counts by status queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -567,17 +591,15 @@ using a secondary index on the column involved in the grouping expression
 | B (UUID PKs only)                 |       457.35 |      872.31 |     1953.07 |     3412.37 |
 | C (auto-increment PK, ext UUID)   |       459.43 |      885.15 |     2074.98 |     3341.03 |
 
-![Order counts by status - PostgreSQL - medium DB](uuid-vs-integer/images/order_counts_by_status-pgsql-medium.png "PostgreSQL - Medium DB - Order counts by status queries per second")
-
 ##### TPS by number of threads and schema design (Large DB size)
+
+![Order counts by status - PostgreSQL - large DB](uuid-vs-integer/images/order_counts_by_status-pgsql-large.png "PostgreSQL - Large DB - Order counts by status queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |        43.38 |       84.24 |      158.37 |      249.28 |
 | B (UUID PKs only)                 |        43.37 |       81.41 |      165.51 |      246.39 |
 | C (auto-increment PK, ext UUID)   |        42.48 |       81.51 |      160.56 |      238.72 |
-
-![Order counts by status - PostgreSQL - large DB](uuid-vs-integer/images/order_counts_by_status-pgsql-large.png "PostgreSQL - Large DB - Order counts by status queries per second")
 
 ### Lookup customer orders results
 
@@ -594,15 +616,17 @@ along with an aggregate operation across a set of records in the
 
 ##### TPS by number of threads and schema design (Small DB size)
 
+![Lookup orders by customer - MySQL - small DB](uuid-vs-integer/images/lookup_orders_by_customer-mysql-small.png "MySQL - Small DB - Lookup orders by customer queries per second")
+
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |      5930.91 |    11430.37 |    23525.73 |    40916.91 |
 | B (UUID PKs only)                 |      5266.74 |    10396.43 |    22760.17 |    39067.47 |
 | C (auto-increment PK, ext UUID)   |      4901.82 |    10004.68 |    20750.32 |    36366.61 |
 
-![Lookup orders by customer - MySQL - small DB](uuid-vs-integer/images/lookup_orders_by_customer-mysql-small.png "MySQL - Small DB - Lookup orders by customer queries per second")
+##### TPS by number of threads and schema design (Medium DB size)
 
-##### TPS by number of threads and schema design (Nedium DB size)
+![Lookup orders by customer - MySQL - medium DB](uuid-vs-integer/images/lookup_orders_by_customer-mysql-medium.png "MySQL - Medium DB - Lookup orders by customer queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -610,9 +634,9 @@ along with an aggregate operation across a set of records in the
 | B (UUID PKs only)                 |      4706.99 |     9606.48 |    20007.97 |    35569.34 |
 | C (auto-increment PK, ext UUID)   |      4182.20 |     8869.60 |    18231.92 |    33571.22 |
 
-![Lookup orders by customer - MySQL - medium DB](uuid-vs-integer/images/lookup_orders_by_customer-mysql-medium.png "MySQL - Medium DB - Lookup orders by customer queries per second")
-
 ##### TPS by number of threads and schema design (Large DB size)
+
+![Lookup orders by customer - MySQL - large DB](uuid-vs-integer/images/lookup_orders_by_customer-mysql-large.png "MySQL - Large DB - Lookup orders by customer queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -620,11 +644,11 @@ along with an aggregate operation across a set of records in the
 | B (UUID PKs only)                 |      1848.24 |     3812.25 |     6326.06 |     8994.89 |
 | C (auto-increment PK, ext UUID)   |      2380.97 |     4582.94 |     9561.05 |    17585.76 |
 
-![Lookup orders by customer - MySQL - large DB](uuid-vs-integer/images/lookup_orders_by_customer-mysql-large.png "MySQL - Large DB - Lookup orders by customer queries per second")
-
 #### PostgreSQL
 
 ##### TPS by number of threads and schema design (Small DB size)
+
+![Lookup orders by customer - PostgreSQL - small DB](uuid-vs-integer/images/lookup_orders_by_customer-pgsql-small.png "PostgreSQL - Small DB - Lookup orders by customer queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -632,9 +656,9 @@ along with an aggregate operation across a set of records in the
 | B (UUID PKs only)                 |      5398.67 |    10588.56 |    22427.03 |    40596.57 |
 | C (auto-increment PK, ext UUID)   |       802.29 |     1710.87 |     4067.06 |     6856.10 |
 
-![Lookup orders by customer - PostgreSQL - small DB](uuid-vs-integer/images/lookup_orders_by_customer-pgsql-small.png "PostgreSQL - Small DB - Lookup orders by customer queries per second")
+##### TPS by number of threads and schema design (Medium DB size)
 
-##### TPS by number of threads and schema design (Nedium DB size)
+![Lookup orders by customer - PostgreSQL - medium DB](uuid-vs-integer/images/lookup_orders_by_customer-pgsql-medium.png "PostgreSQL - Medium DB - Lookup orders by customer queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -642,17 +666,15 @@ along with an aggregate operation across a set of records in the
 | B (UUID PKs only)                 |      4877.40 |     9420.81 |    20228.23 |    36158.88 |
 | C (auto-increment PK, ext UUID)   |       813.73 |     1677.86 |     3931.42 |     6702.27 |
 
-![Lookup orders by customer - PostgreSQL - medium DB](uuid-vs-integer/images/lookup_orders_by_customer-pgsql-medium.png "PostgreSQL - Medium DB - Lookup orders by customer queries per second")
-
 ##### TPS by number of threads and schema design (Large DB size)
+
+![Lookup orders by customer - PostgreSQL - large DB](uuid-vs-integer/images/lookup_orders_by_customer-pgsql-large.png "PostgreSQL - Large DB - Lookup orders by customer queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |      1920.31 |     4170.13 |     7712.94 |    15930.49 |
 | B (UUID PKs only)                 |      1901.57 |     4093.66 |     7169.58 |    14934.87 |
 | C (auto-increment PK, ext UUID)   |       656.69 |     1388.59 |     2946.66 |     5192.11 |
-
-![Lookup orders by customer - PostgreSQL - large DB](uuid-vs-integer/images/lookup_orders_by_customer-pgsql-large.png "PostgreSQL - Large DB - Lookup orders by customer queries per second")
 
 ### Lookup most popular items results
 
@@ -668,15 +690,17 @@ table and `JOIN` operations to multiple tables including the `products` and
 
 ##### TPS by number of threads and schema design (Small DB size)
 
+![Popular items - MySQL - small DB](uuid-vs-integer/images/popular_items-mysql-small.png "MySQL - Small DB - Popular items queries per second")
+
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |        59.81 |      113.44 |      196.46 |      312.38 |
 | B (UUID PKs only)                 |        43.34 |       83.35 |      132.46 |      230.66 |
 | C (auto-increment PK, ext UUID)   |        64.11 |      119.79 |      187.27 |      325.28 |
 
-![Popular items - MySQL - small DB](uuid-vs-integer/images/popular_items-mysql-small.png "MySQL - Small DB - Popular items queries per second")
-
 ##### TPS by number of threads and schema design (Medium DB size)
+
+![Popular items - MySQL - medium DB](uuid-vs-integer/images/popular_items-mysql-medium.png "MySQL - Medium DB - Popular items queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -684,9 +708,9 @@ table and `JOIN` operations to multiple tables including the `products` and
 | B (UUID PKs only)                 |         9.43 |       17.69 |       33.69 |       51.24 |
 | C (auto-increment PK, ext UUID)   |        12.06 |       22.52 |       41.17 |       63.02 |
 
-![Popular items - MySQL - medium DB](uuid-vs-integer/images/popular_items-mysql-medium.png "MySQL - Medium DB - Popular items queries per second")
-
 ##### TPS by number of threads and schema design (Large DB size)
+
+![Popular items - MySQL - large DB](uuid-vs-integer/images/popular_items-mysql-large.png "MySQL - Large DB - Popular items queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -694,11 +718,11 @@ table and `JOIN` operations to multiple tables including the `products` and
 | B (UUID PKs only)                 |         0.05 |        0.09 |        0.11 |        0.11 |
 | C (auto-increment PK, ext UUID)   |         0.16 |        0.30 |        0.52 |        0.73 |
 
-![Popular items - MySQL - large DB](uuid-vs-integer/images/popular_items-mysql-large.png "MySQL - Large DB - Popular items queries per second")
-
 #### PostgreSQL
 
 ##### TPS by number of threads and schema design (Small DB size)
+
+![Popular items - PostgreSQL - small DB](uuid-vs-integer/images/popular_items-pgsql-small.png "PostgreSQL - Small DB - Popular items queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -706,9 +730,9 @@ table and `JOIN` operations to multiple tables including the `products` and
 | B (UUID PKs only)                 |        78.98 |      156.74 |      295.90 |      446.05 |
 | C (auto-increment PK, ext UUID)   |        87.79 |      176.07 |      338.43 |      514.26 |
 
-![Popular items - PostgreSQL - small DB](uuid-vs-integer/images/popular_items-pgsql-small.png "PostgreSQL - Small DB - Popular items queries per second")
-
 ##### TPS by number of threads and schema design (Medium DB size)
+
+![Popular items - PostgreSQL - medium DB](uuid-vs-integer/images/popular_items-pgsql-medium.png "PostgreSQL - Medium DB - Popular items queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
@@ -716,17 +740,15 @@ table and `JOIN` operations to multiple tables including the `products` and
 | B (UUID PKs only)                 |        13.51 |       26.21 |       48.32 |       71.11 |
 | C (auto-increment PK, ext UUID)   |        19.13 |       37.65 |       69.78 |      106.21 |
 
-![Popular items - PostgreSQL - medium DB](uuid-vs-integer/images/popular_items-pgsql-medium.png "PostgreSQL - Medium DB - Popular items queries per second")
-
 ##### TPS by number of threads and schema design (Large DB size)
+
+![Popular items - PostgreSQL - large DB](uuid-vs-integer/images/popular_items-pgsql-large.png "PostgreSQL - Large DB - Popular items queries per second")
 
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |         0.38 |        0.68 |        1.35 |        1.95 |
 | B (UUID PKs only)                 |         0.30 |        0.57 |        1.03 |        1.50 |
 | C (auto-increment PK, ext UUID)   |         0.38 |        0.74 |        1.32 |        2.00 |
-
-![Popular items - PostgreSQL - large DB](uuid-vs-integer/images/popular_items-pgsql-large.png "PostgreSQL - Large DB - Popular items queries per second")
 
 ## Conclusions
 
