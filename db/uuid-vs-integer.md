@@ -500,7 +500,7 @@ tables within a single transaction.
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |        88.19 |      181.25 |      401.69 |      759.64 |
 | B (UUID PKs only)                 |        85.04 |      184.81 |      427.15 |      723.35 |
-| C (auto-increment PK, ext UUID)   |        96.41 |      175.39 |      386.38 |      688.36 |
+| C (auto-increment PK, ext UUID)   |        94.53 |      185.23 |      409.03 |      700.94 |
 
 #### `customer_new_order` TPS / PostgreSQL / Medium DB size
 
@@ -510,7 +510,7 @@ tables within a single transaction.
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |        85.26 |      167.98 |      370.44 |      717.92 |
 | B (UUID PKs only)                 |        80.66 |      167.91 |      371.69 |      689.94 |
-| C (auto-increment PK, ext UUID)   |        81.99 |      166.19 |      330.37 |      650.61 |
+| C (auto-increment PK, ext UUID)   |        82.44 |      170.41 |      340.48 |      694.29 |
 
 #### `customer_new_order` TPS / PostgreSQL / Large DB size
 
@@ -520,7 +520,7 @@ tables within a single transaction.
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |        66.07 |      126.03 |      240.17 |      480.51 |
 | B (UUID PKs only)                 |        65.23 |      124.42 |      239.46 |      457.44 |
-| C (auto-increment PK, ext UUID)   |        69.72 |      129.06 |      234.26 |      451.71 |
+| C (auto-increment PK, ext UUID)   |        64.40 |      124.48 |      230.29 |      468.28 |
 
 ### Order counts per status results
 
@@ -571,7 +571,7 @@ using a secondary index on the column involved in the grouping expression
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |      1254.54 |     2996.22 |     5668.34 |    10450.70 |
 | B (UUID PKs only)                 |      1439.05 |     2849.36 |     5468.08 |    10473.11 |
-| C (auto-increment PK, ext UUID)   |      1413.96 |     2804.26 |     5845.19 |    10137.10 |
+| C (auto-increment PK, ext UUID)   |      1455.38 |     2875.40 |     5527.62 |    10248.12 |
 
 #### `order_counts_by_status` QPS / PostgreSQL / Medium DB size
 
@@ -581,7 +581,7 @@ using a secondary index on the column involved in the grouping expression
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |       466.88 |      946.12 |     2043.78 |     3406.51 |
 | B (UUID PKs only)                 |       457.35 |      872.31 |     1953.07 |     3412.37 |
-| C (auto-increment PK, ext UUID)   |       459.43 |      885.15 |     2074.98 |     3341.03 |
+| C (auto-increment PK, ext UUID)   |       453.27 |      899.54 |     2036.88 |     3284.91 |
 
 #### `order_counts_by_status` QPS / PostgreSQL / Large DB size
 
@@ -591,7 +591,7 @@ using a secondary index on the column involved in the grouping expression
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |        43.38 |       84.24 |      158.37 |      249.28 |
 | B (UUID PKs only)                 |        43.37 |       81.41 |      165.51 |      246.39 |
-| C (auto-increment PK, ext UUID)   |        42.48 |       81.51 |      160.56 |      238.72 |
+| C (auto-increment PK, ext UUID)   |        42.13 |       83.65 |      162.79 |      240.66 |
 
 ### Lookup customer orders results
 
@@ -642,7 +642,7 @@ along with an aggregate operation across a set of records in the
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |      5535.84 |    10517.41 |    23550.26 |    40626.90 |
 | B (UUID PKs only)                 |      5398.67 |    10588.56 |    22427.03 |    40596.57 |
-| C (auto-increment PK, ext UUID)   |       802.29 |     1710.87 |     4067.06 |     6856.10 |
+| C (auto-increment PK, ext UUID)   |      4992.97 |    10000.48 |    20384.42 |    38204.45 |
 
 #### `lookup_orders_by_customer` QPS / PostgreSQL / Medium DB size
 
@@ -652,7 +652,7 @@ along with an aggregate operation across a set of records in the
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |      4950.84 |     9455.83 |    21038.52 |    36402.19 |
 | B (UUID PKs only)                 |      4877.40 |     9420.81 |    20228.23 |    36158.88 |
-| C (auto-increment PK, ext UUID)   |       813.73 |     1677.86 |     3931.42 |     6702.27 |
+| C (auto-increment PK, ext UUID)   |      4769.36 |     9672.92 |    18087.29 |    34486.62 |
 
 #### `lookup_orders_by_customer` QPS / PostgreSQL / Large DB size
 
@@ -662,7 +662,7 @@ along with an aggregate operation across a set of records in the
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |      1920.31 |     4170.13 |     7712.94 |    15930.49 |
 | B (UUID PKs only)                 |      1901.57 |     4093.66 |     7169.58 |    14934.87 |
-| C (auto-increment PK, ext UUID)   |       656.69 |     1388.59 |     2946.66 |     5192.11 |
+| C (auto-increment PK, ext UUID)   |      1993.65 |     3768.92 |     7484.78 |    14854.96 |
 
 ### Lookup most popular items results
 
@@ -712,7 +712,7 @@ table and `JOIN` operations to multiple tables including the `products` and
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |        87.55 |      173.34 |      337.37 |      512.03 |
 | B (UUID PKs only)                 |        78.98 |      156.74 |      295.90 |      446.05 |
-| C (auto-increment PK, ext UUID)   |        87.79 |      176.07 |      338.43 |      514.26 |
+| C (auto-increment PK, ext UUID)   |        87.94 |      173.78 |      317.02 |      484.17 |
 
 #### `popular_items` QPS / PostgreSQL / Medium DB size
 
@@ -722,7 +722,7 @@ table and `JOIN` operations to multiple tables including the `products` and
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |        19.12 |       37.78 |       69.72 |      106.62 |
 | B (UUID PKs only)                 |        13.51 |       26.21 |       48.32 |       71.11 |
-| C (auto-increment PK, ext UUID)   |        19.13 |       37.65 |       69.78 |      106.21 |
+| C (auto-increment PK, ext UUID)   |        18.92 |       36.71 |       68.75 |      104.27 |
 
 #### `popular_items` QPS / PostgreSQL / Large DB size
 
@@ -732,7 +732,7 @@ table and `JOIN` operations to multiple tables including the `products` and
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |         0.38 |        0.68 |        1.35 |        1.95 |
 | B (UUID PKs only)                 |         0.30 |        0.57 |        1.03 |        1.50 |
-| C (auto-increment PK, ext UUID)   |         0.38 |        0.74 |        1.32 |        2.00 |
+| C (auto-increment PK, ext UUID)   |         0.38 |        0.72 |        1.34 |        1.97 |
 
 ## Conclusions
 

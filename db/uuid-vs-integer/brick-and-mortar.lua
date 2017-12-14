@@ -551,6 +551,11 @@ CREATE TABLE IF NOT EXISTS customers (
 ]]
         },
         {
+            "customers_idx_uuid", [[
+CREATE UNIQUE INDEX uix_customer_uuid ON customers (uuid)
+]]
+        },
+        {
             "products", [[
 CREATE TABLE IF NOT EXISTS products (
     id SERIAL NOT NULL PRIMARY KEY,
@@ -560,6 +565,11 @@ CREATE TABLE IF NOT EXISTS products (
     created_on TIMESTAMP NOT NULL,
     updated_on TIMESTAMP NULL
 )
+]]
+        },
+        {
+            "products_idx_uuid", [[
+CREATE UNIQUE INDEX uix_product_uuid ON products (uuid)
 ]]
         },
         {
@@ -604,6 +614,11 @@ CREATE TABLE IF NOT EXISTS suppliers (
 ]]
         },
         {
+            "suppliers_idx_uuid", [[
+CREATE UNIQUE INDEX uix_supplier_uuid ON suppliers (uuid)
+]]
+        },
+        {
             "orders", [[
 CREATE TABLE IF NOT EXISTS orders (
     id SERIAL NOT NULL PRIMARY KEY,
@@ -613,6 +628,11 @@ CREATE TABLE IF NOT EXISTS orders (
     created_on TIMESTAMP NOT NULL,
     updated_on TIMESTAMP NULL
 )
+]]
+        },
+        {
+            "orders_idx_uuid", [[
+CREATE UNIQUE INDEX uix_order_uuid ON orders (uuid)
 ]]
         },
         {
