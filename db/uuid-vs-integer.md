@@ -887,6 +887,13 @@ table and `JOIN` operations to multiple tables including the `products` and
 | B (UUID PKs only)                 |        43.34 |       83.35 |      132.46 |      230.66 |
 | C (auto-increment PK, ext UUID)   |        64.11 |      119.79 |      187.27 |      325.28 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![red] -27.53% | ![red] -26.52% | ![red] -32.57% | ![red] -26.16% |
+| C (auto-increment PK, ext UUID)   | ![grn]  +7.18% | ![grn]  +5.59% | ![grn]  -4.67% | ![grn]  +4.12% |
+
 #### `popular_items` QPS / MySQL / Medium DB size
 
 ![Popular items - MySQL - medium DB](uuid-vs-integer/images/popular_items-mysql-medium.png "MySQL - Medium DB - Popular items queries per second")
@@ -896,6 +903,13 @@ table and `JOIN` operations to multiple tables including the `products` and
 | A (auto-increment PKs no UUID)    |        12.49 |       23.14 |       38.50 |       64.81 |
 | B (UUID PKs only)                 |         9.43 |       17.69 |       33.69 |       51.24 |
 | C (auto-increment PK, ext UUID)   |        12.06 |       22.52 |       41.17 |       63.02 |
+
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![red] -24.49% | ![red] -23.55% | ![org] -12.49% | ![red] -20.93% |
+| C (auto-increment PK, ext UUID)   | ![grn]  -3.44% | ![grn]  -2.69% | ![grn]  +6.93% | ![grn]  -2.76% |
 
 #### `popular_items` QPS / MySQL / Large DB size
 
@@ -907,6 +921,13 @@ table and `JOIN` operations to multiple tables including the `products` and
 | B (UUID PKs only)                 |         0.05 |        0.09 |        0.11 |        0.11 |
 | C (auto-increment PK, ext UUID)   |         0.16 |        0.30 |        0.52 |        0.73 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![red] -68.75% | ![red] -68.96% | ![red] -78.00% | ![red] -83.82% |
+| C (auto-increment PK, ext UUID)   | ![grn]  +0.00% | ![grn]  +3.44% | ![grn]  +4.00% | ![grn]  +7.35% |
+
 #### `popular_items` QPS / PostgreSQL / Small DB size
 
 ![Popular items - PostgreSQL - small DB](uuid-vs-integer/images/popular_items-pgsql-small.png "PostgreSQL - Small DB - Popular items queries per second")
@@ -916,6 +937,13 @@ table and `JOIN` operations to multiple tables including the `products` and
 | A (auto-increment PKs no UUID)    |        87.55 |      173.34 |      337.37 |      512.03 |
 | B (UUID PKs only)                 |        78.98 |      156.74 |      295.90 |      446.05 |
 | C (auto-increment PK, ext UUID)   |        87.94 |      173.78 |      317.02 |      484.17 |
+
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![org]  -9.78% | ![red]  -9.57% | ![org] -12.29% | ![org] -12.88% |
+| C (auto-increment PK, ext UUID)   | ![grn]  +0.44% | ![grn]  +0.25% | ![org]  -6.03% | ![org]  -5.44% |
 
 #### `popular_items` QPS / PostgreSQL / Medium DB size
 
@@ -927,6 +955,13 @@ table and `JOIN` operations to multiple tables including the `products` and
 | B (UUID PKs only)                 |        13.51 |       26.21 |       48.32 |       71.11 |
 | C (auto-increment PK, ext UUID)   |        18.92 |       36.71 |       68.75 |      104.27 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![red] -29.34% | ![red] -30.62% | ![red] -30.69% | ![red] -33.30% |
+| C (auto-increment PK, ext UUID)   | ![grn]  -1.04% | ![grn]  -2.83% | ![grn]  -1.39% | ![grn]  -2.20% |
+
 #### `popular_items` QPS / PostgreSQL / Large DB size
 
 ![Popular items - PostgreSQL - large DB](uuid-vs-integer/images/popular_items-pgsql-large.png "PostgreSQL - Large DB - Popular items queries per second")
@@ -936,6 +971,13 @@ table and `JOIN` operations to multiple tables including the `products` and
 | A (auto-increment PKs no UUID)    |         0.38 |        0.68 |        1.35 |        1.95 |
 | B (UUID PKs only)                 |         0.30 |        0.57 |        1.03 |        1.50 |
 | C (auto-increment PK, ext UUID)   |         0.38 |        0.72 |        1.34 |        1.97 |
+
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![red] -21.05% | ![red] -16.17% | ![red] -23.70% | ![red] -23.07% |
+| C (auto-increment PK, ext UUID)   | ![grn]  +0.00% | ![grn]  +5.88% | ![grn]  -0.74% | ![grn]  +1.02% |
 
 ## Conclusions
 
