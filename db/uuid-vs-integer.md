@@ -543,13 +543,18 @@ tables within a single transaction.
 
 ![New customer orders - MySQL - small DB](uuid-vs-integer/images/customer_new_order-mysql-small.png "MySQL - Small DB - New customer order transactions per second")
 
-| Schema design                     |       1      |      2      |      4      |      8      |
+| Schema design                     |       1      |       2     |     4       |     8       |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |       193.33 |      416.24 |      854.21 |     1646.86 |
-| B (UUID PKs only)                 |       131.45 (:small_red_triangle_down: 32.00%) |      293.09 (:small_red_triangle_down: 29.58%)|      650.58 (:small_red_triangle_down: 23.83%) |     1160.55 (:small_red_triangle_down: 29.52%) |
-| C (auto-increment PK, ext UUID)   |       164.73 (:small_red_triangle_down: 14.79%)|      418.32 (:wavy_dash: +0.49%) |      775.80 (:small_red_triangle_down: 9.17%)|     1389.74 (:small_red_triangle_down: 15.61%) |
+| B (UUID PKs only)                 |       131.45 |      293.09 |      650.58 |     1160.55 |
+| C (auto-increment PK, ext UUID)   |       164.73 |      418.32 |      775.80 |     1389.74 |
 
+The following table shows the differences in TPS compared to schema design "A".
 
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![red] -32.00% | ![red] -29.58% | ![red] -23.83% | ![red] -29.52% |
+| C (auto-increment PK, ext UUID)   | ![org] -14.79% | ![grn]  +0.49% | ![org]  -9.17% | ![red] -15.61% |
 
 #### `customer_new_order` TPS / MySQL / Medium DB size
 
@@ -816,3 +821,7 @@ table and `JOIN` operations to multiple tables including the `products` and
 ## Conclusions
 
 TODO
+
+[red]: https://placehold.it/15/f03c15/000000?text=+
+[org]: https://placehold.it/15/ff9933/000000?text=+
+[grn]: https://placehold.it/15/00cc00/000000?text=+
