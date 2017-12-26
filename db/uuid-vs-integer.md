@@ -775,6 +775,13 @@ along with an aggregate operation across a set of records in the
 | B (UUID PKs only)                 |      5266.74 |    10396.43 |    22760.17 |    39067.47 |
 | C (auto-increment PK, ext UUID)   |      4901.82 |    10004.68 |    20750.32 |    36366.61 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![org] -11.19% | ![org]  -9.04% | ![grn]  -3.25% | ![grn]  -4.51% |
+| C (auto-increment PK, ext UUID)   | ![red] -17.35% | ![org] -12.47% | ![org] -11.79% | ![org] -11.12% |
+
 #### `lookup_orders_by_customer` QPS / MySQL / Medium DB size
 
 ![Lookup orders by customer - MySQL - medium DB](uuid-vs-integer/images/lookup_orders_by_customer-mysql-medium.png "MySQL - Medium DB - Lookup orders by customer queries per second")
@@ -784,6 +791,13 @@ along with an aggregate operation across a set of records in the
 | A (auto-increment PKs no UUID)    |      5097.35 |     9967.02 |    21322.79 |    37746.48 |
 | B (UUID PKs only)                 |      4706.99 |     9606.48 |    20007.97 |    35569.34 |
 | C (auto-increment PK, ext UUID)   |      4182.20 |     8869.60 |    18231.92 |    33571.22 |
+
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![org]  -7.65% | ![grn]  -3.61% | ![org]  -6.16% | ![org]  -5.76% |
+| C (auto-increment PK, ext UUID)   | ![red]  -17.95% | ![org] -11.01% | ![org] -14.49% | ![org] -11.06% |
 
 #### `lookup_orders_by_customer` QPS / MySQL / Large DB size
 
@@ -795,6 +809,13 @@ along with an aggregate operation across a set of records in the
 | B (UUID PKs only)                 |      1848.24 |     3812.25 |     6326.06 |     8994.89 |
 | C (auto-increment PK, ext UUID)   |      2380.97 |     4582.94 |     9561.05 |    17585.76 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![red] -23.11% | ![red] -20.34% | ![red] -36.83% | ![red] -51.92% |
+| C (auto-increment PK, ext UUID)   | ![grn]   -0.95% | ![grn]  -4.23% | ![grn]  -4.53% | ![org]  -6.00% |
+
 #### `lookup_orders_by_customer` QPS / PostgreSQL / Small DB size
 
 ![Lookup orders by customer - PostgreSQL - small DB](uuid-vs-integer/images/lookup_orders_by_customer-pgsql-small.png "PostgreSQL - Small DB - Lookup orders by customer queries per second")
@@ -804,6 +825,13 @@ along with an aggregate operation across a set of records in the
 | A (auto-increment PKs no UUID)    |      5535.84 |    10517.41 |    23550.26 |    40626.90 |
 | B (UUID PKs only)                 |      5398.67 |    10588.56 |    22427.03 |    40596.57 |
 | C (auto-increment PK, ext UUID)   |      4992.97 |    10000.48 |    20384.42 |    38204.45 |
+
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![grn]  -2.47% | ![grn]  +0.67% | ![grn]  -4.76% | ![grn]  -0.07% |
+| C (auto-increment PK, ext UUID)   | ![org]  -9.80% | ![grn]  -4.91% | ![org] -13.44% | ![org]  -5.96% |
 
 #### `lookup_orders_by_customer` QPS / PostgreSQL / Medium DB size
 
@@ -815,6 +843,13 @@ along with an aggregate operation across a set of records in the
 | B (UUID PKs only)                 |      4877.40 |     9420.81 |    20228.23 |    36158.88 |
 | C (auto-increment PK, ext UUID)   |      4769.36 |     9672.92 |    18087.29 |    34486.62 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![grn]  -1.48% | ![grn]  -0.37% | ![grn]  -3.85% | ![grn]  -0.66% |
+| C (auto-increment PK, ext UUID)   | ![grn]  -3.66% | ![grn]  +2.29% | ![org] -14.02% | ![org]  -5.26% |
+
 #### `lookup_orders_by_customer` QPS / PostgreSQL / Large DB size
 
 ![Lookup orders by customer - PostgreSQL - large DB](uuid-vs-integer/images/lookup_orders_by_customer-pgsql-large.png "PostgreSQL - Large DB - Lookup orders by customer queries per second")
@@ -824,6 +859,13 @@ along with an aggregate operation across a set of records in the
 | A (auto-increment PKs no UUID)    |      1920.31 |     4170.13 |     7712.94 |    15930.49 |
 | B (UUID PKs only)                 |      1901.57 |     4093.66 |     7169.58 |    14934.87 |
 | C (auto-increment PK, ext UUID)   |      1993.65 |     3768.92 |     7484.78 |    14854.96 |
+
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![grn]  -0.97% | ![grn]  -1.83% | ![org]  -7.04% | ![org]  -6.24% |
+| C (auto-increment PK, ext UUID)   | ![grn]  +3.81% | ![org]  -9.62% | ![grn]  -2.95% | ![org]  -6.75% |
 
 ### Lookup most popular items results
 
