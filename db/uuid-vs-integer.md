@@ -325,15 +325,20 @@ multi-table transactions as well as read performance on a table scan (since we
 purposely have no index used when ordering by `RAND()` when looking up products
 for the customer to purchase).
 
-For schema design "C", this also accurately stresses the impact of needing to
-do one additional "point select" query for grabbing the internal customer ID
-from the external customer UUID.
+This `customer_new_order` scenario is different from other synthetic `INSERT`
+benchmarks you may have seen in other articles in a **few important ways**:
 
-For schema designs "A" and "C", it also represents the need to perform an
-additional query to retrieve the newly-created order's auto-incrementing
-primary key before inserting order detail records. This step does not need to
-be done for schema design "B" since the UUID is generated ahead of order record
-creation.
+* We are mixing reads and writes in a single transaction, which is more
+  representative of a real-world scenario
+* For schema design "C", we accurately stresses the impact of needing to do one
+  additional "point select" query for grabbing the internal customer ID from
+  the external customer UUID
+* For schema designs "A" and "C", the scenario accurately represents the need
+  to perform an additional query to retrieve the newly-created order's
+  auto-incrementing primary key before inserting order detail records. This step
+  does not need to be done for schema design "B" since the UUID is generated
+  ahead of order record creation and it is important to account for this
+  different when we benchmark
 
 ### Lookup customer orders
 
