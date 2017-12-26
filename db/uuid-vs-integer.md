@@ -154,7 +154,7 @@ why this article uses an archetypal point-of-sale application in order to
 illustrate real-world application query patterns. Instead of relying on
 synthetic tables that don't represent actual data access patterns, we'll
 examine queries that would actually be run against a real application and
-examine the impact of using UUIDs versus integer columns has on these queries.
+examine the impact of using UUIDs versus integer columns on these queries.
 
 To explore all the data access patterns I wanted to explore, I created a
 "brick-and-mortar" store point-of-sale application. This application is all
@@ -171,8 +171,9 @@ executing. This allowed me to compare the impact of UUID vs integer primary
 keys with permutations in initial database size.
 
 For defining the UUID columns in MySQL, I went with a `CHAR(36)` column type.
+
 I'm aware that there are various suggestions for making more efficient UUID
-storage, including uusing a `BINARY(16)` column type or a `CHAR(32)` column
+storage, including using a `BINARY(16)` column type or a `CHAR(32)` column
 type (after stripping the '-' dash characters from the typical string UUID
 representation). However, in my experience either `CHAR(36)`  or `VARCHAR(36)`
 column types, with the dashes kept in the stored value, is the most common
@@ -181,7 +182,7 @@ to.
 
 Since PostgreSQL has a native UUID type, I used that column type and since
 sysbench doesn't currently support native UUID parameter type binding, I used
-the `CAST(?  AS UUID)` expression to convert the string UUID to a native
+the `CAST(? AS UUID)` expression to convert the string UUID to a native
 PostgreSQL UUID type where necessary.
 
 ## Schema design strategies
@@ -200,7 +201,7 @@ auto-incrementing integers as primary keys. Application users look up entities
 by using this auto-incrementing integer as the identifier for various objects
 in the system.
 
-For MySQL, this means that tables in the application schemas are all defined
+For [MySQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L34-L124), this means that tables in the application schemas are all defined
 with an `id` column as the primary key in the following manner:
 
 ```sql
@@ -210,7 +211,7 @@ CREATE TABLE products (
 );
 ```
 
-For PostgreSQL, this means tables in the application schemas are all defined
+For [PostgreSQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L125-L235), this means tables in the application schemas are all defined
 with an `id` column as the primary key in the following manner:
 
 ```sql
@@ -226,7 +227,7 @@ Schema Design "B" represents a database design strategy that **_only_** uses a
 UUID column for the primary key of various entities. Application users use the
 UUID as record identifiers.
 
-For MySQL, this means that tables in the application schemas are all defined
+For [MySQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L237-L326), this means that tables in the application schemas are all defined
 with a `uuid` column as the primary key in the following manner:
 
 ```sql
@@ -236,7 +237,7 @@ CREATE TABLE products (
 );
 ```
 
-For PostgreSQL, this means tables in the application schemas are all defined
+For [PostgreSQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L327-L437), this means tables in the application schemas are all defined
 with an `uuid` column as the primary key in the following manner:
 
 ```sql
@@ -246,7 +247,7 @@ CREATE TABLE products (
 );
 ```
 
-Note that PostgreSQL has a native UUID type.
+**NOTE**: PostgreSQL has a native UUID type.
 
 ### Schema design C: Auto-incrementing integer primary key, UUID externals
 
@@ -258,7 +259,7 @@ application users utilize to look up specific records in the application.
 In other words, there is a secondary unique constraint/key on a UUID column for
 each table in the schema.
 
-For MySQL, this means that tables in the application schemas are all defined
+For [MySQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L439-L535), this means that tables in the application schemas are all defined
 with an `id` column as the primary key and a `uuid` secondary key in the
 following manner:
 
@@ -271,7 +272,7 @@ CREATE TABLE products (
 );
 ```
 
-For PostgreSQL, this means that tables in the application schemas are all
+For [PostgreSQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L537-L670), this means that tables in the application schemas are all
 defined with an `id` column as the primary key and a `uuid` secondary key in
 the following manner:
 
@@ -282,6 +283,8 @@ CREATE TABLE products (
   ...
 );
 ```
+
+**NOTE**: PostgreSQL has a native UUID type.
 
 ## Application scenarios
 
