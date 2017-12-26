@@ -566,6 +566,13 @@ The following table shows the differences in TPS compared to schema design "A".
 | B (UUID PKs only)                 |       114.87 |      260.26 |      565.07 |     1027.15 |
 | C (auto-increment PK, ext UUID)   |       121.28 |      333.61 |      696.10 |     1258.69 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![red] -17.20% | ![red] -29.23% | ![red] -21.39% | ![red] -27.52% |
+| C (auto-increment PK, ext UUID)   | ![org] -12.58% | ![org]  -9.29% | ![grn]  -3.16% | ![org] -11.18% |
+
 #### `customer_new_order` TPS / MySQL / Large DB size
 
 ![New customer orders - MySQL - large DB](uuid-vs-integer/images/customer_new_order-mysql-large.png "MySQL - Large DB - New customer order transactions per second")
@@ -575,6 +582,13 @@ The following table shows the differences in TPS compared to schema design "A".
 | A (auto-increment PKs no UUID)    |        46.39 |      112.80 |      333.28 |      586.64 |
 | B (UUID PKs only)                 |        66.06 |      162.16 |      160.23 |      170.11 |
 | C (auto-increment PK, ext UUID)   |        49.84 |      116.42 |      326.95 |      746.46 |
+
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![grn] +42.40% | ![grn] +43.75% | ![red] -50.92% | ![red] -71.00% |
+| C (auto-increment PK, ext UUID)   | ![grn]  +7.43% | ![grn]  +3.20% | ![grn]  -1.89% | ![grn] +27.24% |
 
 #### `customer_new_order` TPS / PostgreSQL / Small DB size
 
@@ -586,6 +600,13 @@ The following table shows the differences in TPS compared to schema design "A".
 | B (UUID PKs only)                 |        85.04 |      184.81 |      427.15 |      723.35 |
 | C (auto-increment PK, ext UUID)   |        94.53 |      185.23 |      409.03 |      700.94 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![grn]  -3.57% | ![grn]  +1.96% | ![grn]  +6.33% | ![grn]  +4.77% |
+| C (auto-increment PK, ext UUID)   | ![grn]  +7.18% | ![grn]  +2.19% | ![grn]  -1.82% | ![org]  -7.72% |
+
 #### `customer_new_order` TPS / PostgreSQL / Medium DB size
 
 ![New customer orders - PostgreSQL - medium DB](uuid-vs-integer/images/customer_new_order-pgsql-medium.png "PostgreSQL - Medium DB - New customer order transactions per second")
@@ -596,6 +617,13 @@ The following table shows the differences in TPS compared to schema design "A".
 | B (UUID PKs only)                 |        80.66 |      167.91 |      371.69 |      689.94 |
 | C (auto-increment PK, ext UUID)   |        82.44 |      170.41 |      340.48 |      694.29 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![org]  -5.39% | ![grn]  -0.04% | ![grn]  +0.33% | ![grn]  -3.89% |
+| C (auto-increment PK, ext UUID)   | ![grn]  -3.30% | ![grn]  +1.44% | ![org]  -8.08% | ![grn]  -3.29% |
+
 #### `customer_new_order` TPS / PostgreSQL / Large DB size
 
 ![New customer orders - PostgreSQL - large DB](uuid-vs-integer/images/customer_new_order-pgsql-large.png "PostgreSQL - Large DB - New customer order transactions per second")
@@ -605,6 +633,13 @@ The following table shows the differences in TPS compared to schema design "A".
 | A (auto-increment PKs no UUID)    |        66.07 |      126.03 |      240.17 |      480.51 |
 | B (UUID PKs only)                 |        65.23 |      124.42 |      239.46 |      457.44 |
 | C (auto-increment PK, ext UUID)   |        64.40 |      124.48 |      230.29 |      468.28 |
+
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![grn]  -1.27% | ![grn]  -1.27% | ![grn]  -0.29% | ![grn]  -4.80% |
+| C (auto-increment PK, ext UUID)   | ![grn]  -2.52% | ![grn]  -1.22% | ![grn]  -4.11% | ![grn]  -2.54% |
 
 ### Order counts per status results
 
