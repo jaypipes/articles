@@ -76,10 +76,12 @@ URL that looks like
 
 On the flip side, one might reasonably argue that having a
 sequentially-incrementing integer primary key as your application's external
-identifier means that a) competitors can trivially determine the number of
-customers or sales orders that you have and b) allow crackers to guess a
-critical identifier for customer information since identifiers are sequential
-and guessable.
+identifier can have negative side-effects:
+
+* Competitors can trivially determine the number of customers or sales orders
+  that you have
+* Crackers can piece together a critical part of customer information since
+  identifiers are sequential and guessable
 
 ### Scaling considerations
 
