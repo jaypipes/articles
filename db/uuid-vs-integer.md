@@ -106,24 +106,29 @@ prevent this duplication.
 
 One strategy is to take extreme care to set the starting integer sequence of
 the new shard's database tables to a high value leaving room for the original
-shard's incrementing identifier sequences to continue to grow as needed. Each
-time a new shard is brought online, the same problem will arise.
+shard's incrementing identifier sequences to continue to grow as needed.
+Unfortunately, each time a new shard is brought online, the same problem will
+arise and the application development team will need to play the dance of
+manually carving out enough space in each shard for new integer primary keys in
+the shard.
 
-The other strategy would be to have external identifiers contain an additional
-"shard key" so that top-level application routers will be able to determine
-which application shard to send a request to. For example, if each shard
-contains a customers table that uses a sequentially-generated integer primary
-key as the customer's external identifier, then an additional shard or
+The other strategy would be to have users pass a "shard key" in *addition to
+the external identifier* so that top-level application routers will be able to
+determine which application shard to send a request to. For example, if each
+shard contains a customers table that uses a sequentially-generated integer
+primary key as the customer's external identifier, then an additional shard or
 partition key will be needed by the top-level application router to determine
 which shard to send a request for customer "123456" since both shard databases
-could have "123456" as a primary key in their customers table.
+could have "123456" as a primary key in their customers table. So the end user
+might end up having to manually specify shard "A" along with their external
+identifier of "123456". Clearly this is neither ideal nor user-friendly.
 
 UUIDs as external identifiers eliminate the above issues with regard to scaling
 out via sharding. Since UUIDs are, well, universal, there's no need to worry
 about duplicate external identifiers.
 
-Schema design "C" discussed below is specially designed to benchmark the
-performance of a database schema that uses UUID values for **external**
+**NOTE**: [Schema design "C"](#schema-design-c-auto-incrementing-integer-primary-key-external-uuids) discussed below is specially designed to benchmark
+the performance of a database schema that uses UUID values for **external**
 identifiers and sequentially-generated integers for **internal** primary keys.
 This database schema doesn't suffer from the scale-out issues that arise from
 using sequentially-generated integers as external identifiers.
