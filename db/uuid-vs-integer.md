@@ -342,10 +342,9 @@ benchmarks you may have seen in other articles in a **few important ways**:
 
 ### Lookup customer orders
 
-The `lookup_orders_by_customer` scenario comes from the brick-and-mortar
-application and is designed to emulate a query that would be run by a customer
-service representative when a customer comes into the store and needs to find
-some order information.
+The `lookup_orders_by_customer` scenario is designed to emulate a query that
+would be run by a customer service representative when a customer comes into
+the store and needs to find some information on their recent orders.
 
 This scenario only entails a single `SELECT` query, but the query is designed
 to stress a particular archetypal data access pattern: aggregating information
@@ -406,17 +405,16 @@ GROUP BY o.id
 ORDER BY o.created_on DESC
 ```
 
-Note that for schema design "C", since we use the UUID as the external
-identifier for the customer, we need to join to the `customers` table in order to
-query on the customer's UUID value. Since the UUID *is* the primary key in
+**NOTE**: For schema design "C", since we use the UUID as the external
+identifier for the customer, we need to join to the `customers` table in order
+to query on the customer's UUID value. Since the UUID *is* the primary key in
 schema design "B" and the auto-incrementing integer *is* the primary key in
-schema design "A", those queries need not join to the `customers` table.
+schema design "A", those queries **do not need to join** to the `customers` table.
 
 ### Order counts by status
 
-The `order_counts_by_status` scenario, from the brick-and-mortar
-application, includes a single `SELECT` statement that is exactly the same for
-each schema design:
+The `order_counts_by_status` scenario also includes a single `SELECT` statement
+that is exactly the same for each schema design:
 
 ```sql
 SELECT o.status, COUNT(*) AS num_orders
@@ -426,19 +424,22 @@ GROUP BY o.status
 
 There is a secondary index on the `orders.status` table, so this particular
 scenario is testing the impact of using UUIDs vs integer primary keys when the
-only column being used in an aggregate query is *not* the primary key and there
-is an index on that field. For MySQL with InnoDB, which uses a clustered index
-organized table layout, this means that each secondary index record also
-includes the primary key as well. So, we should be able to determine the impact
-of primary key column type choice even for queries that seemingly do not
-involve those primary keys.
+only column being used in an aggregate query **_is not the primary key_** and there
+is an index on that field.
+
+For MySQL with InnoDB, which uses a clustered index organized table layout,
+this means that each secondary index record **_also includes the primary key_** as
+well.
+
+With the `order_counts_by_status`, we will be able to determine the impact of
+primary key column type choice even for queries that seemingly do not involve
+those primary keys.
 
 ### Lookup most popular items
 
-The `lookup_most_popular_items` scenario, from the brick-and-mortar
-application, includes a single `SELECT` statement that might be run by an
-extract-transform-load (ETL) tool or an online analytical processing (OLAP)
-program.
+The `lookup_most_popular_items` scenario also features a single `SELECT`
+statement that might be run by an extract-transform-load (ETL) tool or an
+online analytical processing (OLAP) program.
 
 For the general manager of our brick-and-mortar store, she might want to know
 which are the best-selling products and which suppliers are providing those
@@ -464,10 +465,10 @@ ORDER BY COUNT(DISTINCT o.id) DESC
 LIMIT 100
 ```
 
-Note that there is no `WHERE` clause on the above, which means that there will
+**NOTE**: There is no `WHERE` clause on the above, which means that there will
 end up being a full table scan of the `order_details`. I've specifically
 designed this query to show the impact that the choice of using UUID or
-auto-incrementing primary keys has on sequential read performance.
+auto-incrementing primary keys has on **_sequential read performance_**.
 
 ## Test configuration
 
@@ -486,7 +487,7 @@ the DB server of course) were running on the machine.
 
 All benchmark runs were done using sysbench 1.0.12, with **_30 seconds_** run
 time for each scenario variation. The one scenario that writes records to a
-table (`customer_new_order`) was run *after* the scenarios that only read
+table (`customer_new_order`) was run **_after_** the scenarios that only read
 records. This was to ensure consistent results that were able to be compared
 between different initial sizes of database.
 
@@ -497,8 +498,9 @@ and the "large" had around 1M order detail records. I did this to see the
 relative impact of the base fact table (`order_details`) on the performance of
 various operations.
 
-Of course, 1M order detail records isn't a "large" database at all. However,
-the sizing here is only relative to each other. The medium database is
+Of course, 1M order detail records isn't a "large" database at all.
+
+However, the sizing here is only relative to each other. The medium database is
 approximately an order of magnitude greater than the small database. And the
 large database is another order of magnitude greater than the medium.
 
@@ -510,7 +512,9 @@ benchmarks below. You will see the impact of the database design and column
 type choices on that unfortunate situation as well!
 
 The benchmark script was written in Lua and is [included](uuid-vs-integer/brick-and-mortar.lua) in this article
-repository for anyone to take a look at and critique.
+repository for anyone to take a look at and critique. If you find errors,
+please create an [issue](https://github.com/jaypipes/articles/issues) on Github and/or submit a pull request with a fix and I
+will re-run anything as needed and publish errata accordingly.
 
 ### DB configuration
 
@@ -524,26 +528,43 @@ The database server configurations we test are the following:
 I made no adjustments for the purposes of tuning or anything else. The MySQL
 `innodb_buffer_pool_size` was 128MB (the default). Besides needing to create a
 database user in MySQL and PostgreSQL, I issued zero SQL statements outside of
-the benchmark's statements.
+those executed by the benchmark scenarios themselves.
 
 ## Benchmark results
 
 Below, for each data access/write scenario, I give the results for the various
 database sizes tested for both MySQL and PostgreSQL.
 
-Note that **I'm not comparing MySQL and PostgreSQL here**. That's not the point
-of interest in these benchmarks. Instead, I'm interested in seeing the impact
-on each database server s performance when using UUIDs vs auto-incrementing
-integers for primary keys.
+Note that **_I'm not comparing MySQL and PostgreSQL here_**.
 
-Also note that I did no tuning or optimization whatsoever for either MySQL or
+That's not the point of interest in these benchmarks. Instead, I'm interested
+in seeing the impact on each database server s performance when using UUIDs vs
+auto-incrementing integers for primary keys.
+
+Also note that I did **_no tuning or optimization whatsoever_** for either MySQL or
 PostgreSQL. Again, the point is to identify the impact of primary key column
 type choice on the performance of a variety of data write and read patterns.
-The point of this benchmark isn't to tune a particular database for a specific
+The point of this benchmark is **not** to tune a particular database for a specific
 workload or compare MySQL to PostgreSQL.
 
 The CSV files containing the parsed results of the sysbench runs are [available](uuid-vs-integer/results/)
 in this article git repository.
+
+Results for each scenario are shown below in separate sections. For each
+scenario, I show a bar graph visualization of the results, the raw results in
+tabular format, followed by a table showing the differences in performance
+between schema design "A" and schema designs "B" and "C" for that particular
+scenario and initial database size.
+
+**NOTE**: In the tables showing the performance differences between schema
+design "A" and schema designs "B" and "C", you will note that I included ![red]
+red, ![org] orange or ![grn] green boxes. These boxes have the following meaning:
+
+| color  | difference between schema "A" results                                 |
+| ------ | --------------------------------------------------------------------- |
+| ![grn] | less then 5% negative difference (including all positive differences) |
+| ![org] | between 5% and 14.99% negative difference                             |
+| ![red] | 15% or greater negative difference                                    |
 
 ### New customer order results
 
