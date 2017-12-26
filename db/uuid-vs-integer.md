@@ -1,10 +1,6 @@
 # Investigation into UUID vs. integer database performance
 
-There have [been](http://kccoder.com/mysql/uuid-vs-int-insert-performance/)
-[a](https://cjsavage.com/guides/mysql/insert-perf-uuid-vs-ordered-uuid-vs-int-pk.html)
-[number](https://tomharrisonjr.com/uuid-or-guid-as-primary-keys-be-careful-7b2aa3dcb439)
-[of](http://krow.livejournal.com/497839.html) [articles](https://www.percona.com/blog/2007/03/13/to-uuid-or-not-to-uuid/)
-over the past ten years or so that
+There have [been](http://kccoder.com/mysql/uuid-vs-int-insert-performance/) [a](https://cjsavage.com/guides/mysql/insert-perf-uuid-vs-ordered-uuid-vs-int-pk.html) [number](https://tomharrisonjr.com/uuid-or-guid-as-primary-keys-be-careful-7b2aa3dcb439) [of](http://krow.livejournal.com/497839.html) [articles](https://www.percona.com/blog/2007/03/13/to-uuid-or-not-to-uuid/) over the past ten years or so that
 describe some of the benefits, costs and potential pitfalls of using UUID
 values as primary keys for database tables instead of the more traditional
 auto-incrementing integer primary key.
@@ -12,9 +8,9 @@ auto-incrementing integer primary key.
 Each of these articles tends to include some interesting graphs, but nearly all
 of them focus on two metrics for benchmark data: the raw speed of `INSERT`
 statements and the size of the table data and index data segments. While these
-metrics are both very important, focusing on them exclusively means that there
-are some critical points left out from the overall discussion of application
-performance and query efficiency.
+metrics are both very important, focusing on them exclusively leaves out a
+number of critical points from the overall discussion of application
+performance, scaling strategies and query efficiency.
 
 In addition, most of the articles I've read look strictly at MySQL (and InnoDB
 storage engine) performance and don't touch the other great open source
@@ -27,7 +23,10 @@ comparative benchmark scenarios that demonstrate the impact of using one
 strategy over another.
 
 1. [Overview](#overview)
-1. [UUID column type considerations](#uuid-column-type-considerations)
+    1. [On external identifiers](#on-external-identifiers)
+    1. [Scaling considerations](#scaling-considerations)
+1. [Database schema](#database-schema)
+    1. [UUID column type considerations](#uuid-column-type-considerations)
 1. [Schema design strategies](#schema-design-strategies)
     1. [A: Auto-inc integer PK, no UUIDs](#schema-design-a-auto-incrementing-integer-primary-key-no-uuids)
     1. [B: UUID PK](#schema-design-b-uuid-pk)
@@ -49,6 +48,85 @@ strategy over another.
 1. [Conclusions](#conclusions)
 
 ## Overview
+
+When designing a relational database schema, application developers have to
+decide what the **primary key** of each table should be. Some developers choose
+a "natural primary key" that may exist for some entity -- e.g. a phone number
+might be a good natural primary key for an employee entity. Other developers
+choose what is called a "synthetic primary key", which is a number or string of
+characters that is either sequentially or randomly generated.
+
+This article will focus on assessing the impact of column type for developers
+making the latter choice to use a synthetic primary key for their entities.
+These developers typically choose to use either a sequentially-generated
+integer or a randomly-generated UUID value as their primary key column type.
+
+### On external identifiers
+
+There are some *non* performance-related differences between integer and UUID
+primary keys that are worth noting.
+
+When it comes to how end users interact with the application -- and ultimately
+with the relational database that backs that application -- there's a pretty
+stark difference between applications that use integer vs UUID values as
+**their external identifiers**. One might reasonably argue that a URL like
+`https://example.com/products/123456` is more user-friendly and readable than a
+URL that looks like
+`https://example.com/products/27da46fb-f4c3-449e-bfc3-c2523ffeeebc`.
+
+On the flip side, one might reasonably argue that having a
+sequentially-incrementing integer primary key as your application's external
+identifier means that a) competitors can trivially determine the number of
+customers or sales orders that you have and b) allow crackers to guess a
+critical identifier for customer information since identifiers are sequential
+and guessable.
+
+### Scaling considerations
+
+When an application grows beyond the ability of a single database server or
+cluster to service user needs, the application development team must figure out
+how to **scale out** the application.
+
+The most traditional and popular way of scaling out an application is to use a
+**partitioning** or **sharding** strategy. The application database is cloned
+into an application shard and that shard services a portion of the user
+requests. While an in-depth discussion of the issues developers run into when
+sharding their applications is beyond the scope of this article, it's important
+to address one glaring issue that arises from using sequentially-incrementing
+integers as **external identifiers** for an application.
+
+Using sequentially-incrementing integers as external identifiers and primary
+keys leads to trouble when attempting to shard an application for scale-out.
+When cloning the application database for the new application shard, external
+identifiers produced in the new shard will duplicate external identifiers from
+the first shard unless the application developers use one of two strategies to
+prevent this duplication.
+
+One strategy is to take extreme care to set the starting integer sequence of
+the new shard's database tables to a high value leaving room for the original
+shard's incrementing identifier sequences to continue to grow as needed. Each
+time a new shard is brought online, the same problem will arise.
+
+The other strategy would be to have external identifiers contain an additional
+"shard key" so that top-level application routers will be able to determine
+which application shard to send a request to. For example, if each shard
+contains a customers table that uses a sequentially-generated integer primary
+key as the customer's external identifier, then an additional shard or
+partition key will be needed by the top-level application router to determine
+which shard to send a request for customer "123456" since both shard databases
+could have "123456" as a primary key in their customers table.
+
+UUIDs as external identifiers eliminate the above issues with regard to scaling
+out via sharding. Since UUIDs are, well, universal, there's no need to worry
+about duplicate external identifiers.
+
+Schema design "C" discussed below is specially designed to benchmark the
+performance of a database schema that uses UUID values for **external**
+identifiers and sequentially-generated integers for **internal** primary keys.
+This database schema doesn't suffer from the scale-out issues that arise from
+using sequentially-generated integers as external identifiers.
+
+## Database schema
 
 Many real-world applications show similar patterns with regards to the types of
 queries that are common for the particular category of application.
@@ -78,7 +156,7 @@ customers, suppliers, products, etc.
 
 ![brick-and-mortar store E-R diagram](uuid-vs-integer/images/brick-and-mortar-e-r.png "Entity-relationship diagram for brick-and-mortar store application")
 
-## UUID column type considerations
+### UUID column type considerations
 
 For UUID generation, I used a [Lua module](uuid-vs-integer/uuid.lua) that, with [some hacking](uuid-vs-integer/brick-and-mortar.lua#L1817-L1820) to support
 thread-safe operations, generated UUIDs in a consistent fashion for each thread
@@ -216,9 +294,8 @@ the scenario is composed.
 
 ### New customer order
 
-The `customer_new_order` scenario comes from the brick-and-mortar application.
-It is intended to emulate a single customer making a purchase of items in the
-store.
+The `customer_new_order` scenario emulates a single customer making a purchase
+of items in the store. The steps involved are:
 
 1. Look up some random products that have inventory at the store
 1. (Schema design "C" only) Look up the customer's internal ID from their
@@ -469,8 +546,10 @@ tables within a single transaction.
 | Schema design                     |       1      |      2      |      4      |      8      |
 | --------------------------------- | ------------:| -----------:| -----------:| -----------:|
 | A (auto-increment PKs no UUID)    |       193.33 |      416.24 |      854.21 |     1646.86 |
-| B (UUID PKs only)                 |       131.45 |      293.09 |      650.58 |     1160.55 |
-| C (auto-increment PK, ext UUID)   |       164.73 |      418.32 |      775.80 |     1389.74 |
+| B (UUID PKs only)                 |       131.45 (:small_red_triangle_down: 32.00%) |      293.09 (:small_red_triangle_down: 29.58%)|      650.58 (:small_red_triangle_down: 23.83%) |     1160.55 (:small_red_triangle_down: 29.52%) |
+| C (auto-increment PK, ext UUID)   |       164.73 (:small_red_triangle_down: 14.79%)|      418.32 (:wavy_dash: +0.49%) |      775.80 (:small_red_triangle_down: 9.17%)|     1389.74 (:small_red_triangle_down: 15.61%) |
+
+
 
 #### `customer_new_order` TPS / MySQL / Medium DB size
 
