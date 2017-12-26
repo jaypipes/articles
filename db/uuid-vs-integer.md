@@ -662,6 +662,13 @@ using a secondary index on the column involved in the grouping expression
 | B (UUID PKs only)                 |      1549.78 |     2887.22 |     6702.80 |    10635.49 |
 | C (auto-increment PK, ext UUID)   |      1544.83 |     2873.24 |     6545.08 |    10598.03 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![grn]  -4.09% | ![org]  -6.13% | ![org]  -6.88% | ![org]  -5.07% |
+| C (auto-increment PK, ext UUID)   | ![grn]  -4.39% | ![org]  -6.58% | ![org]  -9.07% | ![org]  -5.40% |
+
 #### `order_counts_by_status` QPS / MySQL / Medium DB size
 
 ![Order counts by status - MySQL - medium DB](uuid-vs-integer/images/order_counts_by_status-mysql-medium.png "MySQL - Medium DB - Order counts by status queries per second")
@@ -671,6 +678,13 @@ using a secondary index on the column involved in the grouping expression
 | A (auto-increment PKs no UUID)    |       584.69 |     1119.66 |     2287.99 |     3643.57 |
 | B (UUID PKs only)                 |       556.03 |     1062.13 |     2179.67 |     3388.88 |
 | C (auto-increment PK, ext UUID)   |       556.27 |     1072.93 |     2114.73 |     3356.61 |
+
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![grn]  -4.90% | ![org]  -5.13% | ![grn]  -4.73% | ![org]  -6.99% |
+| C (auto-increment PK, ext UUID)   | ![grn]  -4.86% | ![grn]  -4.17% | ![org]  -7.57% | ![org]  -7.87% |
 
 #### `order_counts_by_status` QPS / MySQL / Large DB size
 
@@ -682,6 +696,13 @@ using a secondary index on the column involved in the grouping expression
 | B (UUID PKs only)                 |        41.86 |       82.61 |      157.42 |      248.07 |
 | C (auto-increment PK, ext UUID)   |        43.69 |       87.07 |      167.99 |      244.56 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![org] -10.84% | ![org] -11.37% | ![org] -10.01% | ![org]  -8.23% |
+| C (auto-increment PK, ext UUID)   | ![org]  -6.88% | ![org]  -6.58% | ![grn]  -3.97% | ![org]  -9.53% |
+
 #### `order_counts_by_status` QPS / PostgreSQL / Small DB size
 
 ![Order counts by status - PostgreSQL - small DB](uuid-vs-integer/images/order_counts_by_status-pgsql-small.png "PostgreSQL - Small DB - Order counts by status queries per second")
@@ -691,6 +712,13 @@ using a secondary index on the column involved in the grouping expression
 | A (auto-increment PKs no UUID)    |      1254.54 |     2996.22 |     5668.34 |    10450.70 |
 | B (UUID PKs only)                 |      1439.05 |     2849.36 |     5468.08 |    10473.11 |
 | C (auto-increment PK, ext UUID)   |      1455.38 |     2875.40 |     5527.62 |    10248.12 |
+
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![grn] +14.70% | ![grn]  -4.90% | ![grn]  -3.53% | ![grn]  +0.21% |
+| C (auto-increment PK, ext UUID)   | ![grn] +16.00% | ![grn]  -4.03% | ![org]  -2.48% | ![org]  -1.93% |
 
 #### `order_counts_by_status` QPS / PostgreSQL / Medium DB size
 
@@ -702,6 +730,13 @@ using a secondary index on the column involved in the grouping expression
 | B (UUID PKs only)                 |       457.35 |      872.31 |     1953.07 |     3412.37 |
 | C (auto-increment PK, ext UUID)   |       453.27 |      899.54 |     2036.88 |     3284.91 |
 
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![grn]  -2.04% | ![org]  -7.80% | ![grn]  -4.43% | ![grn]  +0.17% |
+| C (auto-increment PK, ext UUID)   | ![grn]  -2.91% | ![grn]  -4.92% | ![grn]  -0.33% | ![grn]  -3.56% |
+
 #### `order_counts_by_status` QPS / PostgreSQL / Large DB size
 
 ![Order counts by status - PostgreSQL - large DB](uuid-vs-integer/images/order_counts_by_status-pgsql-large.png "PostgreSQL - Large DB - Order counts by status queries per second")
@@ -711,6 +746,13 @@ using a secondary index on the column involved in the grouping expression
 | A (auto-increment PKs no UUID)    |        43.38 |       84.24 |      158.37 |      249.28 |
 | B (UUID PKs only)                 |        43.37 |       81.41 |      165.51 |      246.39 |
 | C (auto-increment PK, ext UUID)   |        42.13 |       83.65 |      162.79 |      240.66 |
+
+The following table shows the differences in TPS compared to schema design "A".
+
+| Schema design                     |   1            |   2            |    4           |      8         |
+| --------------------------------- | --------------:| --------------:| --------------:| --------------:|
+| B (UUID PKs only)                 | ![grn]  -0.02% | ![grn]  -3.35% | ![grn]  +4.50% | ![grn]  -1.15% |
+| C (auto-increment PK, ext UUID)   | ![grn]  -2.88% | ![grn]  -0.70% | ![grn]  +2.79% | ![grn]  -3.45% |
 
 ### Lookup customer orders results
 
