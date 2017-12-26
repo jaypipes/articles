@@ -154,7 +154,7 @@ why this article uses an archetypal point-of-sale application in order to
 illustrate real-world application query patterns. Instead of relying on
 synthetic tables that don't represent actual data access patterns, we'll
 examine queries that would actually be run against a real application and
-examine the impact of using UUIDs versus integer columns has on these queries.
+examine the impact of using UUIDs versus integer columns on these queries.
 
 To explore all the data access patterns I wanted to explore, I created a
 "brick-and-mortar" store point-of-sale application. This application is all
@@ -171,8 +171,9 @@ executing. This allowed me to compare the impact of UUID vs integer primary
 keys with permutations in initial database size.
 
 For defining the UUID columns in MySQL, I went with a `CHAR(36)` column type.
+
 I'm aware that there are various suggestions for making more efficient UUID
-storage, including uusing a `BINARY(16)` column type or a `CHAR(32)` column
+storage, including using a `BINARY(16)` column type or a `CHAR(32)` column
 type (after stripping the '-' dash characters from the typical string UUID
 representation). However, in my experience either `CHAR(36)`  or `VARCHAR(36)`
 column types, with the dashes kept in the stored value, is the most common
@@ -181,7 +182,7 @@ to.
 
 Since PostgreSQL has a native UUID type, I used that column type and since
 sysbench doesn't currently support native UUID parameter type binding, I used
-the `CAST(?  AS UUID)` expression to convert the string UUID to a native
+the `CAST(? AS UUID)` expression to convert the string UUID to a native
 PostgreSQL UUID type where necessary.
 
 ## Schema design strategies
@@ -200,7 +201,7 @@ auto-incrementing integers as primary keys. Application users look up entities
 by using this auto-incrementing integer as the identifier for various objects
 in the system.
 
-For MySQL, this means that tables in the application schemas are all defined
+For [MySQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L34-L124), this means that tables in the application schemas are all defined
 with an `id` column as the primary key in the following manner:
 
 ```sql
@@ -210,7 +211,7 @@ CREATE TABLE products (
 );
 ```
 
-For PostgreSQL, this means tables in the application schemas are all defined
+For [PostgreSQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L125-L235), this means tables in the application schemas are all defined
 with an `id` column as the primary key in the following manner:
 
 ```sql
@@ -226,7 +227,7 @@ Schema Design "B" represents a database design strategy that **_only_** uses a
 UUID column for the primary key of various entities. Application users use the
 UUID as record identifiers.
 
-For MySQL, this means that tables in the application schemas are all defined
+For [MySQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L237-L326), this means that tables in the application schemas are all defined
 with a `uuid` column as the primary key in the following manner:
 
 ```sql
@@ -236,7 +237,7 @@ CREATE TABLE products (
 );
 ```
 
-For PostgreSQL, this means tables in the application schemas are all defined
+For [PostgreSQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L327-L437), this means tables in the application schemas are all defined
 with an `uuid` column as the primary key in the following manner:
 
 ```sql
@@ -246,7 +247,7 @@ CREATE TABLE products (
 );
 ```
 
-Note that PostgreSQL has a native UUID type.
+**NOTE**: PostgreSQL has a native UUID type.
 
 ### Schema design C: Auto-incrementing integer primary key, UUID externals
 
@@ -258,7 +259,7 @@ application users utilize to look up specific records in the application.
 In other words, there is a secondary unique constraint/key on a UUID column for
 each table in the schema.
 
-For MySQL, this means that tables in the application schemas are all defined
+For [MySQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L439-L535), this means that tables in the application schemas are all defined
 with an `id` column as the primary key and a `uuid` secondary key in the
 following manner:
 
@@ -271,7 +272,7 @@ CREATE TABLE products (
 );
 ```
 
-For PostgreSQL, this means that tables in the application schemas are all
+For [PostgreSQL](https://github.com/jaypipes/articles/blob/master/db/uuid-vs-integer/brick-and-mortar.lua#L537-L670), this means that tables in the application schemas are all
 defined with an `id` column as the primary key and a `uuid` secondary key in
 the following manner:
 
@@ -282,6 +283,8 @@ CREATE TABLE products (
   ...
 );
 ```
+
+**NOTE**: PostgreSQL has a native UUID type.
 
 ## Application scenarios
 
@@ -322,22 +325,26 @@ multi-table transactions as well as read performance on a table scan (since we
 purposely have no index used when ordering by `RAND()` when looking up products
 for the customer to purchase).
 
-For schema design "C", this also accurately stresses the impact of needing to
-do one additional "point select" query for grabbing the internal customer ID
-from the external customer UUID.
+This `customer_new_order` scenario is different from other synthetic `INSERT`
+benchmarks you may have seen in other articles in a **few important ways**:
 
-For schema designs "A" and "C", it also represents the need to perform an
-additional query to retrieve the newly-created order's auto-incrementing
-primary key before inserting order detail records. This step does not need to
-be done for schema design "B" since the UUID is generated ahead of order record
-creation.
+* We are mixing reads and writes in a single transaction, which is more
+  representative of a real-world scenario
+* For schema design "C", we accurately stresses the impact of needing to do one
+  additional "point select" query for grabbing the internal customer ID from
+  the external customer UUID
+* For schema designs "A" and "C", the scenario accurately represents the need
+  to perform an additional query to retrieve the newly-created order's
+  auto-incrementing primary key before inserting order detail records. This step
+  does not need to be done for schema design "B" since the UUID is generated
+  ahead of order record creation and it is important to account for this
+  different when we benchmark
 
 ### Lookup customer orders
 
-The `lookup_orders_by_customer` scenario comes from the brick-and-mortar
-application and is designed to emulate a query that would be run by a customer
-service representative when a customer comes into the store and needs to find
-some order information.
+The `lookup_orders_by_customer` scenario is designed to emulate a query that
+would be run by a customer service representative when a customer comes into
+the store and needs to find some information on their recent orders.
 
 This scenario only entails a single `SELECT` query, but the query is designed
 to stress a particular archetypal data access pattern: aggregating information
@@ -398,17 +405,16 @@ GROUP BY o.id
 ORDER BY o.created_on DESC
 ```
 
-Note that for schema design "C", since we use the UUID as the external
-identifier for the customer, we need to join to the `customers` table in order to
-query on the customer's UUID value. Since the UUID *is* the primary key in
+**NOTE**: For schema design "C", since we use the UUID as the external
+identifier for the customer, we need to join to the `customers` table in order
+to query on the customer's UUID value. Since the UUID *is* the primary key in
 schema design "B" and the auto-incrementing integer *is* the primary key in
-schema design "A", those queries need not join to the `customers` table.
+schema design "A", those queries **do not need to join** to the `customers` table.
 
 ### Order counts by status
 
-The `order_counts_by_status` scenario, from the brick-and-mortar
-application, includes a single `SELECT` statement that is exactly the same for
-each schema design:
+The `order_counts_by_status` scenario also includes a single `SELECT` statement
+that is exactly the same for each schema design:
 
 ```sql
 SELECT o.status, COUNT(*) AS num_orders
@@ -418,19 +424,22 @@ GROUP BY o.status
 
 There is a secondary index on the `orders.status` table, so this particular
 scenario is testing the impact of using UUIDs vs integer primary keys when the
-only column being used in an aggregate query is *not* the primary key and there
-is an index on that field. For MySQL with InnoDB, which uses a clustered index
-organized table layout, this means that each secondary index record also
-includes the primary key as well. So, we should be able to determine the impact
-of primary key column type choice even for queries that seemingly do not
-involve those primary keys.
+only column being used in an aggregate query **_is not the primary key_** and there
+is an index on that field.
+
+For MySQL with InnoDB, which uses a clustered index organized table layout,
+this means that each secondary index record **_also includes the primary key_** as
+well.
+
+With the `order_counts_by_status`, we will be able to determine the impact of
+primary key column type choice even for queries that seemingly do not involve
+those primary keys.
 
 ### Lookup most popular items
 
-The `lookup_most_popular_items` scenario, from the brick-and-mortar
-application, includes a single `SELECT` statement that might be run by an
-extract-transform-load (ETL) tool or an online analytical processing (OLAP)
-program.
+The `lookup_most_popular_items` scenario also features a single `SELECT`
+statement that might be run by an extract-transform-load (ETL) tool or an
+online analytical processing (OLAP) program.
 
 For the general manager of our brick-and-mortar store, she might want to know
 which are the best-selling products and which suppliers are providing those
@@ -456,10 +465,10 @@ ORDER BY COUNT(DISTINCT o.id) DESC
 LIMIT 100
 ```
 
-Note that there is no `WHERE` clause on the above, which means that there will
+**NOTE**: There is no `WHERE` clause on the above, which means that there will
 end up being a full table scan of the `order_details`. I've specifically
 designed this query to show the impact that the choice of using UUID or
-auto-incrementing primary keys has on sequential read performance.
+auto-incrementing primary keys has on **_sequential read performance_**.
 
 ## Test configuration
 
@@ -478,7 +487,7 @@ the DB server of course) were running on the machine.
 
 All benchmark runs were done using sysbench 1.0.12, with **_30 seconds_** run
 time for each scenario variation. The one scenario that writes records to a
-table (`customer_new_order`) was run *after* the scenarios that only read
+table (`customer_new_order`) was run **_after_** the scenarios that only read
 records. This was to ensure consistent results that were able to be compared
 between different initial sizes of database.
 
@@ -489,8 +498,9 @@ and the "large" had around 1M order detail records. I did this to see the
 relative impact of the base fact table (`order_details`) on the performance of
 various operations.
 
-Of course, 1M order detail records isn't a "large" database at all. However,
-the sizing here is only relative to each other. The medium database is
+Of course, 1M order detail records isn't a "large" database at all.
+
+However, the sizing here is only relative to each other. The medium database is
 approximately an order of magnitude greater than the small database. And the
 large database is another order of magnitude greater than the medium.
 
@@ -502,7 +512,9 @@ benchmarks below. You will see the impact of the database design and column
 type choices on that unfortunate situation as well!
 
 The benchmark script was written in Lua and is [included](uuid-vs-integer/brick-and-mortar.lua) in this article
-repository for anyone to take a look at and critique.
+repository for anyone to take a look at and critique. If you find errors,
+please create an [issue](https://github.com/jaypipes/articles/issues) on Github and/or submit a pull request with a fix and I
+will re-run anything as needed and publish errata accordingly.
 
 ### DB configuration
 
@@ -516,26 +528,43 @@ The database server configurations we test are the following:
 I made no adjustments for the purposes of tuning or anything else. The MySQL
 `innodb_buffer_pool_size` was 128MB (the default). Besides needing to create a
 database user in MySQL and PostgreSQL, I issued zero SQL statements outside of
-the benchmark's statements.
+those executed by the benchmark scenarios themselves.
 
 ## Benchmark results
 
 Below, for each data access/write scenario, I give the results for the various
 database sizes tested for both MySQL and PostgreSQL.
 
-Note that **I'm not comparing MySQL and PostgreSQL here**. That's not the point
-of interest in these benchmarks. Instead, I'm interested in seeing the impact
-on each database server s performance when using UUIDs vs auto-incrementing
-integers for primary keys.
+Note that **_I'm not comparing MySQL and PostgreSQL here_**.
 
-Also note that I did no tuning or optimization whatsoever for either MySQL or
+That's not the point of interest in these benchmarks. Instead, I'm interested
+in seeing the impact on each database server s performance when using UUIDs vs
+auto-incrementing integers for primary keys.
+
+Also note that I did **_no tuning or optimization whatsoever_** for either MySQL or
 PostgreSQL. Again, the point is to identify the impact of primary key column
 type choice on the performance of a variety of data write and read patterns.
-The point of this benchmark isn't to tune a particular database for a specific
+The point of this benchmark is **not** to tune a particular database for a specific
 workload or compare MySQL to PostgreSQL.
 
 The CSV files containing the parsed results of the sysbench runs are [available](uuid-vs-integer/results/)
 in this article git repository.
+
+Results for each scenario are shown below in separate sections. For each
+scenario, I show a bar graph visualization of the results, the raw results in
+tabular format, followed by a table showing the differences in performance
+between schema design "A" and schema designs "B" and "C" for that particular
+scenario and initial database size.
+
+**NOTE**: In the tables showing the performance differences between schema
+design "A" and schema designs "B" and "C", you will note that I included ![red]
+red, ![org] orange or ![grn] green boxes. These boxes have the following meaning:
+
+| color  | difference between schema "A" results                                 |
+| ------ | --------------------------------------------------------------------- |
+| ![grn] | less then 5% negative difference (including all positive differences) |
+| ![org] | between 5% and 14.99% negative difference                             |
+| ![red] | 15% or greater negative difference                                    |
 
 ### New customer order results
 
@@ -647,6 +676,67 @@ The following table shows the differences in TPS compared to schema design "A".
 | --------------------------------- | --------------:| --------------:| --------------:| --------------:|
 | B (UUID PKs only)                 | ![grn]  -1.27% | ![grn]  -1.27% | ![grn]  -0.29% | ![grn]  -4.80% |
 | C (auto-increment PK, ext UUID)   | ![grn]  -2.52% | ![grn]  -1.22% | ![grn]  -4.11% | ![grn]  -2.54% |
+
+#### `customer_new_order` summary
+
+So, what are some things we can take away from the above results for our mixed
+read/write `customer_new_order` scenario? Well, there are a few.
+
+For MySQL, schema design "B" (UUID primary keys) consistently performed
+significantly worse than both schema design "A" and schema design "C". We can
+theorize that because UUIDs are not created in sequential order and because
+InnoDB lays out its tables in a clustered index organization (meaning, the data
+pages are sorted by primary key), InnoDB is doing more random I/O for schema
+design "B" since new primary keys are not guaranteed to be at the tail of the
+latest data page.
+
+**NOTE**: InnoDB doesn't actually store all the table record data sorted by the
+primary key value. Instead, inside each InnoDB data page there is a little
+dictionary of primary key values along with a pointer/offset to where the
+remainder of that record's data can be found within that data page. That said,
+this dictionary still needs to be sorted by primary key value, and since new
+primary keys are not guaranteed to go at the end of this dictionary, that means
+more random I/O and insertion sorts than schema designs "B" or "C".
+
+For MySQL, we see that the performance of schema design "C" is worse than
+schema design "A" for the smaller initial database sizes (though never anywhere
+as bad as schema design "B"). However, the larger the initial database size,
+the better schema design "C" performs. At the "large" initial database size,
+schema design "C" is either comparable to or outperforming the performance of
+schema design "A".
+
+Recall that for the "large" initial database size, the `order_details` fact
+table was bigger than the entire InnoDB buffer pool (128M). This means that in
+order to satisfy the `customer_new_order` scenario, InnoDB needs to read some
+data from the buffer pool and write new records into the buffer pool. Due to
+the random I/O needed by the UUID primary keys, there is a higher likelihood
+that InnoDB will need to read data pages from disk instead of memory. For
+schema designs "A" and "C", there is virtually zero chance that InnoDB will
+need to read a data page from disk because previous records will have been
+written into a data page that is in the buffer pool already (since we know that
+the previous record will most likely be in the data page we are writing the
+current record to). We can see the effects of this in the abysmal performance
+of  schema design "B" at higher concurrency levels for the "large" initial
+database size. Regardless of the number of concurrent threads, we're unable to
+exceed 170.11 transactions per second, which at 8 concurrent threads is a **71%
+decrease** in performance from schema design "A".
+
+For PostgreSQL, we see **very little difference** between the three schema
+designs for the `customer_new_order` scenario on each of the initial database
+sizes. Transactions per second nicely double for each doubling of concurrent
+threads, regardless of the schema design.
+
+I was a little surprised by this result for PostgreSQL. Although PostgreSQL has
+a native UUID column type, the UUIDs generated by the scenario are certainly
+not ordered. And I know that PostgreSQL uses a clustered index organization for
+its table layout, so I would have expected to see a performance degradation
+resulting from that clustered index being insertion-sorted repeatedly for those
+new random UUID values. My suspicion is that even with the "large" initial
+database size, that PostgreSQL's table buffers were still entirely in memory
+and therefore the effect of the random I/O read and write patterns were less
+pronounced. I may run the scenario with an initial database size that I know
+exceeds PostgreSQL's default buffer sizes and see if the effect can be
+reproduced in PostgreSQL.
 
 ### Order counts per status results
 
