@@ -42,7 +42,7 @@ strategy over another.
     1. [DB setup](#db-setup)
 1. [Benchmark results](#benchmark-results)
     1. [New customer order](#new-customer-order-results)
-    1. [Lookup customer orders](#lookup-customer-order-results)
+    1. [Lookup customer orders](#lookup-customer-orders-results)
     1. [Order counts by status](#order-counts-by-status-results)
     1. [Lookup most popular items](#lookup-most-popular-items-results)
 1. [Conclusions](#conclusions)
@@ -740,7 +740,7 @@ patterns were less pronounced. I may run the scenario with an initial database
 size that I know exceeds PostgreSQL's default buffer sizes and see if the
 effect can be reproduced in PostgreSQL.
 
-### Order counts per status results
+### Order counts by status results
 
 Here are the number of transactions per second that were possible (for N
 concurrent threads) for the `order_counts_by_status` scenario. These
