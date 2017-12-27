@@ -1159,12 +1159,12 @@ schema design "B" to suffer compared to schema design "A".
 And suffer it did.
 
 Even on the "small" initial database sizes, schema design "B" performed around
-**11% worse** than schema design "A". The "medium" initial database size was
-around **30% worse** and the "large" initial database size was around **21%
-worse** than schema design "A".
+**28% worse** than schema design "A". The "medium" initial database size was
+around **20% worse** and the "large" initial database size was more than a
+whopping **70% worse** than schema design "A".
 
 We see that the 4X increase in secondary index record size results in terrible
-performance when so much fewer index pages can be spooled into memory compared
+performance when so many fewer index pages can be spooled into memory compared
 to the schema designs with smaller primary key column types.
 
 Interestingly, we see that schema design "C" actually **performs better** than
@@ -1222,6 +1222,22 @@ The following table shows the differences in TPS compared to schema design "A".
 | --------------------------------- | --------------:| --------------:| --------------:| --------------:|
 | B (UUID PKs only)                 | ![red] -21.05% | ![red] -16.17% | ![red] -23.70% | ![red] -23.07% |
 | C (auto-increment PK, ext UUID)   | ![grn]  +0.00% | ![grn]  +5.88% | ![grn]  -0.74% | ![grn]  +1.02% |
+
+#### `popular_items` summary for PostgreSQL
+
+The impact of primary key column type was most evident for the `popular_items`
+scenario for PostgreSQL. As was the case for MySQL, we see a **consistent and
+significant performance degradation** for schema design "B" at all initial
+database sizes and concurrency levels.
+
+While the "small" initial database size saw schema design "B" perform around
+**10% slower** than schema design "A", the larger initial database sizes saw
+between **20 and 32% slowdowns at all concurrency levels**.
+
+For schema design "C", we see a similar pattern emerge as we saw with the MySQL
+results. Schema design "C" performs comparable to schema design "A" but for the
+"large" initial database size, we see schema design "C" outperforming schema
+design "A" pretty consistently at all concurrency levels.
 
 ## Conclusions
 
