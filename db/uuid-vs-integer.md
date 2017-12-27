@@ -949,7 +949,7 @@ The following table shows the differences in TPS compared to schema design "A".
 | Schema design                     |   1            |   2            |    4           |      8         |
 | --------------------------------- | --------------:| --------------:| --------------:| --------------:|
 | B (UUID PKs only)                 | ![org]  -7.65% | ![grn]  -3.61% | ![org]  -6.16% | ![org]  -5.76% |
-| C (auto-increment PK, ext UUID)   | ![red]  -17.95% | ![org] -11.01% | ![org] -14.49% | ![org] -11.06% |
+| C (auto-increment PK, ext UUID)   | ![red] -17.95% | ![org] -11.01% | ![org] -14.49% | ![org] -11.06% |
 
 #### `lookup_orders_by_customer` QPS / MySQL / Large DB size
 
@@ -966,7 +966,54 @@ The following table shows the differences in TPS compared to schema design "A".
 | Schema design                     |   1            |   2            |    4           |      8         |
 | --------------------------------- | --------------:| --------------:| --------------:| --------------:|
 | B (UUID PKs only)                 | ![red] -23.11% | ![red] -20.34% | ![red] -36.83% | ![red] -51.92% |
-| C (auto-increment PK, ext UUID)   | ![grn]   -0.95% | ![grn]  -4.23% | ![grn]  -4.53% | ![org]  -6.00% |
+| C (auto-increment PK, ext UUID)   | ![grn]  -0.95% | ![grn]  -4.23% | ![grn]  -4.53% | ![org]  -6.00% |
+
+#### `lookup_orders_by_customer` summary for MySQL
+
+This scenario is all about showing the impact of the primary key column type on
+the performance of `JOIN` operations.
+
+`JOIN` operations (specifically the `eq_join` operation that will satisfy an
+`ON` condition containing an equality comparator) will read index records from
+both sides of the `JOIN`, comparing the values of the fields in the `ON` clause
+to determine if the table record meets the equality condition.
+
+Clearly, the greater the number of index records that can be placed in a single
+page in memory for this comparison work, the faster the work will be completed
+and thus the faster the `JOIN` operation will be.
+
+The `SELECT` statement involved in this scenario required one additional `JOIN`
+for schema design "C" -- in order to do the lookup of internal customer integer
+ID from the external customer UUID. Therefore, I expected to see a small
+performance decrease for schema design "C" compared to schema design "A" across
+all initial database sizes.
+
+For schema design "B", I expected to see similar performance to schema design
+"A" for database sizes that could fit entirely in the InnoDB buffer pool and a
+small to medium decrease in performance once the database could no longer fit
+in memory.
+
+The results we see for this scenario *mostly* matched my expectations, with a
+couple surprises.
+
+First, I was surprised to see schema design "C" perform poorly in the smaller
+initial database sizes compared to schema design "A". A single additional
+`eq_join` operation to match the customer's internal integer identifier to the
+supplied external customer UUID resulted in a a greater than **10% decrease**
+in overall performance for both "small" and "medium" initial database sizes. I
+had expected to see this number more in the 5% or less range.
+
+Secondly, I was surprised by the drop-off in performance of schema design "B"
+at the "large" initial database size. I expected some amount of negative
+impact, but clearly once the database no longer fits in resident memory, the
+impact of primary key column type really starts to show up. At 8 concurrent
+threads, schema design "B" had a **greater than 50% decrease** in performance
+compared to schema design "A".
+
+By contrast, once the database no longer fit in resident memory, schema design
+"C" started to shine. We no longer see the 10%+ decrease in performance
+compared to schema design "A" and instead modest decreases in performance of 5%
+or less.
 
 #### `lookup_orders_by_customer` QPS / PostgreSQL / Small DB size
 
