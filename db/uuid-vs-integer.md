@@ -242,7 +242,7 @@ with an `uuid` column as the primary key in the following manner:
 
 ```sql
 CREATE TABLE products (
-  id UUID NOT NULL PRIMARY KEY,
+  uuid UUID NOT NULL PRIMARY KEY,
   ...
 );
 ```
