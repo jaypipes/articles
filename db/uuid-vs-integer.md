@@ -1066,6 +1066,22 @@ The following table shows the differences in TPS compared to schema design "A".
 | B (UUID PKs only)                 | ![grn]  -0.97% | ![grn]  -1.83% | ![org]  -7.04% | ![org]  -6.24% |
 | C (auto-increment PK, ext UUID)   | ![grn]  +3.81% | ![org]  -9.62% | ![grn]  -2.95% | ![org]  -6.75% |
 
+#### `lookup_orders_by_customer` summary for PostgreSQL
+
+For PostgreSQL, as was the case for the `order_counts_by_status` scenario, we
+saw less of a performance degradation between schema design "A" for both schema
+design "B" and "C".
+
+For the "small" and "medium" initial database sizes, we see a greater decrease
+in performance for schema design "C" at higher concurrency levels. This can be
+explained by the extra `JOIN` to the customers table that is necessary to
+satisfy the external to internal identifier lookup.
+
+For the "large" initial database size, results were inconclusive. I can detect
+no discernable difference between schema design "B" and schema design "C" when
+compared to the performance of schema design "A". I may re-run this particular
+benchmark for larger-still initial database sizes and see if a pattern emerges.
+
 ### Lookup most popular items results
 
 Here are the number of transactions per second that were possible (for N
