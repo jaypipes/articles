@@ -330,7 +330,7 @@ benchmarks you may have seen in other articles in a **few important ways**:
 
 * We are mixing reads and writes in a single transaction, which is more
   representative of a real-world scenario
-* For schema design "C", we accurately stresses the impact of needing to do one
+* For schema design "C", we accurately stress the impact of needing to do one
   additional "point select" query for grabbing the internal customer ID from
   the external customer UUID
 * For schema designs "A" and "C", the scenario accurately represents the need
@@ -338,7 +338,7 @@ benchmarks you may have seen in other articles in a **few important ways**:
   auto-incrementing primary key before inserting order detail records. This step
   does not need to be done for schema design "B" since the UUID is generated
   ahead of order record creation and it is important to account for this
-  different when we benchmark
+  difference when we benchmark
 
 ### Lookup customer orders
 
@@ -348,9 +348,8 @@ the store and needs to find some information on their recent orders.
 
 This scenario only entails a single `SELECT` query, but the query is designed
 to stress a particular archetypal data access pattern: aggregating information
-across a set of columns in a child table used in a secondary index (product and
-supplier columns) while filtering records also on a secondary index in a parent
-table (customer).
+across a set of columns in a fact table while filtering records on a secondary
+index in that fact table.
 
 This query looks like this for schema design "A":
 
