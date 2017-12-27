@@ -861,7 +861,7 @@ The following table shows the differences in TPS compared to schema design "A".
 | Schema design                     |   1            |   2            |    4           |      8         |
 | --------------------------------- | --------------:| --------------:| --------------:| --------------:|
 | B (UUID PKs only)                 | ![grn] +14.70% | ![grn]  -4.90% | ![grn]  -3.53% | ![grn]  +0.21% |
-| C (auto-increment PK, ext UUID)   | ![grn] +16.00% | ![grn]  -4.03% | ![org]  -2.48% | ![org]  -1.93% |
+| C (auto-increment PK, ext UUID)   | ![grn] +16.00% | ![grn]  -4.03% | ![grn]  -2.48% | ![grn]  -1.93% |
 
 #### `order_counts_by_status` QPS / PostgreSQL / Medium DB size
 
@@ -896,6 +896,15 @@ The following table shows the differences in TPS compared to schema design "A".
 | --------------------------------- | --------------:| --------------:| --------------:| --------------:|
 | B (UUID PKs only)                 | ![grn]  -0.02% | ![grn]  -3.35% | ![grn]  +4.50% | ![grn]  -1.15% |
 | C (auto-increment PK, ext UUID)   | ![grn]  -2.88% | ![grn]  -0.70% | ![grn]  +2.79% | ![grn]  -3.45% |
+
+#### `order_counts_by_status` summary for PostgreSQL
+
+For PostgreSQL, there was virtually no difference in queries per second for any
+initial database size or schema design. There was only a single result (for the
+"medium" initial database size and 2 concurrent threads) where the performance
+delta was greater than 4.99%. I view this as a slight anomaly based on the
+remainder of the consistent results. Perhaps some vacuuming or auto-cleanup
+activity occurred during that particular run.
 
 ### Lookup customer orders results
 
