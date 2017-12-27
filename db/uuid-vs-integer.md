@@ -12,9 +12,9 @@ metrics are both very important, focusing on them exclusively leaves out a
 number of critical points from the overall discussion of application
 performance, scaling strategies and query efficiency.
 
-In addition, most of the articles I've read look strictly at MySQL (and InnoDB
+In addition, most of the articles I've read look strictly at [MySQL](https://www.mysql.com) (and InnoDB
 storage engine) performance and don't touch the other great open source
-database server, PostgreSQL.
+database server, [PostgreSQL](https://postgresql.org).
 
 In this article, I  aim to provide a thorough data-backed comparison of UUID
 and integer field performance for both MySQL and PostgreSQL. We'll be examining
@@ -42,7 +42,7 @@ strategy over another.
     1. [DB setup](#db-setup)
 1. [Benchmark results](#benchmark-results)
     1. [New customer order](#new-customer-order-results)
-    1. [Lookup customer orders](#lookup-customer-order-results)
+    1. [Lookup customer orders](#lookup-customer-orders-results)
     1. [Order counts by status](#order-counts-by-status-results)
     1. [Lookup most popular items](#lookup-most-popular-items-results)
 1. [Conclusions](#conclusions)
@@ -538,7 +538,7 @@ database sizes tested for both MySQL and PostgreSQL.
 Note that **_I'm not comparing MySQL and PostgreSQL here_**.
 
 That's not the point of interest in these benchmarks. Instead, I'm interested
-in seeing the impact on each database server s performance when using UUIDs vs
+in seeing the impact on each database server's performance when using UUIDs vs
 auto-incrementing integers for primary keys.
 
 Also note that I did **_no tuning or optimization whatsoever_** for either MySQL or
@@ -626,6 +626,50 @@ The following table shows the differences in TPS compared to schema design "A".
 | B (UUID PKs only)                 | ![grn] +42.40% | ![grn] +43.75% | ![red] -50.92% | ![red] -71.00% |
 | C (auto-increment PK, ext UUID)   | ![grn]  +7.43% | ![grn]  +3.20% | ![grn]  -1.89% | ![grn] +27.24% |
 
+#### `customer_new_order` summary for MySQL
+
+So, what are some things we can take away from the above results for our mixed
+read/write `customer_new_order` scenario? Well, there are a few.
+
+For MySQL, schema design "B" (UUID primary keys) consistently performed
+significantly worse than both schema design "A" and schema design "C". We can
+theorize that because UUIDs are not created in sequential order and because
+InnoDB lays out its tables in a clustered index organization (meaning, the data
+pages are sorted by primary key), InnoDB is doing more random I/O for schema
+design "B" since new primary keys are not guaranteed to be at the tail of the
+latest data page.
+
+**NOTE**: InnoDB doesn't actually store all the table record data sorted by the
+primary key value. Instead, inside each InnoDB data page there is a little
+dictionary of primary key values along with a pointer/offset to where the
+remainder of that record's data can be found within that data page. That said,
+this dictionary still needs to be sorted by primary key value, and since new
+primary keys are not guaranteed to go at the end of this dictionary, that means
+more random I/O and insertion sorts than schema designs "B" or "C".
+
+For MySQL, we see that the performance of schema design "C" is worse than
+schema design "A" for the smaller initial database sizes (though never anywhere
+as bad as schema design "B"). However, the larger the initial database size,
+the better schema design "C" performs. At the "large" initial database size,
+schema design "C" is either comparable to or outperforming the performance of
+schema design "A".
+
+Recall that for the "large" initial database size, the `order_details` fact
+table was bigger than the entire InnoDB buffer pool (128M). This means that in
+order to satisfy the `customer_new_order` scenario, InnoDB needs to read some
+data from the buffer pool and write new records into the buffer pool. Due to
+the random I/O needed by the UUID primary keys, there is a higher likelihood
+that InnoDB will need to read data pages from disk instead of memory. For
+schema designs "A" and "C", there is virtually zero chance that InnoDB will
+need to read a data page from disk because previous records will have been
+written into a data page that is in the buffer pool already (since we know that
+the previous record will most likely be in the data page we are writing the
+current record to). We can see the effects of this in the abysmal performance
+of  schema design "B" at higher concurrency levels for the "large" initial
+database size. Regardless of the number of concurrent threads, we're unable to
+exceed 170.11 transactions per second, which at 8 concurrent threads is a **71%
+decrease** in performance from schema design "A".
+
 #### `customer_new_order` TPS / PostgreSQL / Small DB size
 
 ![New customer orders - PostgreSQL - small DB](uuid-vs-integer/images/customer_new_order-pgsql-small.png "PostgreSQL - Small DB - New customer order transactions per second")
@@ -677,49 +721,7 @@ The following table shows the differences in TPS compared to schema design "A".
 | B (UUID PKs only)                 | ![grn]  -1.27% | ![grn]  -1.27% | ![grn]  -0.29% | ![grn]  -4.80% |
 | C (auto-increment PK, ext UUID)   | ![grn]  -2.52% | ![grn]  -1.22% | ![grn]  -4.11% | ![grn]  -2.54% |
 
-#### `customer_new_order` summary
-
-So, what are some things we can take away from the above results for our mixed
-read/write `customer_new_order` scenario? Well, there are a few.
-
-For MySQL, schema design "B" (UUID primary keys) consistently performed
-significantly worse than both schema design "A" and schema design "C". We can
-theorize that because UUIDs are not created in sequential order and because
-InnoDB lays out its tables in a clustered index organization (meaning, the data
-pages are sorted by primary key), InnoDB is doing more random I/O for schema
-design "B" since new primary keys are not guaranteed to be at the tail of the
-latest data page.
-
-**NOTE**: InnoDB doesn't actually store all the table record data sorted by the
-primary key value. Instead, inside each InnoDB data page there is a little
-dictionary of primary key values along with a pointer/offset to where the
-remainder of that record's data can be found within that data page. That said,
-this dictionary still needs to be sorted by primary key value, and since new
-primary keys are not guaranteed to go at the end of this dictionary, that means
-more random I/O and insertion sorts than schema designs "B" or "C".
-
-For MySQL, we see that the performance of schema design "C" is worse than
-schema design "A" for the smaller initial database sizes (though never anywhere
-as bad as schema design "B"). However, the larger the initial database size,
-the better schema design "C" performs. At the "large" initial database size,
-schema design "C" is either comparable to or outperforming the performance of
-schema design "A".
-
-Recall that for the "large" initial database size, the `order_details` fact
-table was bigger than the entire InnoDB buffer pool (128M). This means that in
-order to satisfy the `customer_new_order` scenario, InnoDB needs to read some
-data from the buffer pool and write new records into the buffer pool. Due to
-the random I/O needed by the UUID primary keys, there is a higher likelihood
-that InnoDB will need to read data pages from disk instead of memory. For
-schema designs "A" and "C", there is virtually zero chance that InnoDB will
-need to read a data page from disk because previous records will have been
-written into a data page that is in the buffer pool already (since we know that
-the previous record will most likely be in the data page we are writing the
-current record to). We can see the effects of this in the abysmal performance
-of  schema design "B" at higher concurrency levels for the "large" initial
-database size. Regardless of the number of concurrent threads, we're unable to
-exceed 170.11 transactions per second, which at 8 concurrent threads is a **71%
-decrease** in performance from schema design "A".
+#### `customer_new_order` summary for PostgreSQL
 
 For PostgreSQL, we see **very little difference** between the three schema
 designs for the `customer_new_order` scenario on each of the initial database
@@ -730,15 +732,15 @@ I was a little surprised by this result for PostgreSQL. Although PostgreSQL has
 a native UUID column type, the UUIDs generated by the scenario are certainly
 not ordered. And I know that PostgreSQL uses a clustered index organization for
 its table layout, so I would have expected to see a performance degradation
-resulting from that clustered index being insertion-sorted repeatedly for those
-new random UUID values. My suspicion is that even with the "large" initial
-database size, that PostgreSQL's table buffers were still entirely in memory
-and therefore the effect of the random I/O read and write patterns were less
-pronounced. I may run the scenario with an initial database size that I know
-exceeds PostgreSQL's default buffer sizes and see if the effect can be
-reproduced in PostgreSQL.
+resulting from that clustered index being searched and insertion-sorted
+repeatedly for those new random UUID values. My suspicion is that even with the
+"large" initial database size, that PostgreSQL's table buffers were still
+entirely in memory and therefore the effect of the random I/O read and write
+patterns were less pronounced. I may run the scenario with an initial database
+size that I know exceeds PostgreSQL's default buffer sizes and see if the
+effect can be reproduced in PostgreSQL.
 
-### Order counts per status results
+### Order counts by status results
 
 Here are the number of transactions per second that were possible (for N
 concurrent threads) for the `order_counts_by_status` scenario. These
@@ -800,6 +802,50 @@ The following table shows the differences in TPS compared to schema design "A".
 | B (UUID PKs only)                 | ![org] -10.84% | ![org] -11.37% | ![org] -10.01% | ![org]  -8.23% |
 | C (auto-increment PK, ext UUID)   | ![org]  -6.88% | ![org]  -6.58% | ![grn]  -3.97% | ![org]  -9.53% |
 
+#### `order_counts_by_status` summary for MySQL
+
+Recall that this scenario is intended to spot the impact of primary key column
+type choice for queries that do **NOT** involve the primary key. The query
+simply does an scan of the index on `orders.status`, tallying counts of each
+distinct value in the index.
+
+However, also remember that InnoDB's secondary index records **always contain
+the primary key value in addition to the values of the fields involved in the
+secondary index**.
+
+What this means is that for schema design "B", each record in the index on
+`orders.status` contains the 36-byte UUID primary key value.  For schema design
+"C", each index record contains the 4-byte integer primary key value. The
+`orders.status` field is a `VARCHAR(20)` column type that has an average length
+of around 7 bytes. Extrapolating from these numbers, we can see that for schema
+design "B", the average index record length will be **42 bytes** and for schema
+design "C" it will be **11 bytes**. That's approximately **4X the number of index
+records** that can fit into a single page of memory so I would have expected to
+see a significant decrease in performance for schema design "B" compared to
+schema design "A". And I expected to see nearly identical performance to "A"
+from schema design "C".
+
+This is **NOT**, however, what we see in the results.
+
+For the "small" and "medium" initial database sizes, we see a small (less than
+10%) decrease in queries per second for both schema design "B" and "C". For the
+"large" initial database size, we see a pretty consistent 10% or slightly more
+decrease in QPS for schema design "B" and a likewise fairly consistent smaller
+decrease in performance for schema design "C".
+
+The negative effect of the larger index record size for schema design "B"
+certainly is more evident on the larger initial database size. I would surmise
+that as the database size grows, that negative effect will also grow due to the
+chance that index pages will not be in memory and will thus need to be spooled
+from disk in order to be read for the query. The larger index record size means
+more index pages are needed, which means greater chance of being pulled from
+disk.
+
+In summary, the only really surprising result for this scenario (for MySQL) was
+that there was any negative impact for schema design "C". From what I know
+about InnoDB internals, I would have expected nearly identical performance of
+this particular query for schema designs "A" and "C".
+
 #### `order_counts_by_status` QPS / PostgreSQL / Small DB size
 
 ![Order counts by status - PostgreSQL - small DB](uuid-vs-integer/images/order_counts_by_status-pgsql-small.png "PostgreSQL - Small DB - Order counts by status queries per second")
@@ -815,7 +861,7 @@ The following table shows the differences in TPS compared to schema design "A".
 | Schema design                     |   1            |   2            |    4           |      8         |
 | --------------------------------- | --------------:| --------------:| --------------:| --------------:|
 | B (UUID PKs only)                 | ![grn] +14.70% | ![grn]  -4.90% | ![grn]  -3.53% | ![grn]  +0.21% |
-| C (auto-increment PK, ext UUID)   | ![grn] +16.00% | ![grn]  -4.03% | ![org]  -2.48% | ![org]  -1.93% |
+| C (auto-increment PK, ext UUID)   | ![grn] +16.00% | ![grn]  -4.03% | ![grn]  -2.48% | ![grn]  -1.93% |
 
 #### `order_counts_by_status` QPS / PostgreSQL / Medium DB size
 
@@ -850,6 +896,15 @@ The following table shows the differences in TPS compared to schema design "A".
 | --------------------------------- | --------------:| --------------:| --------------:| --------------:|
 | B (UUID PKs only)                 | ![grn]  -0.02% | ![grn]  -3.35% | ![grn]  +4.50% | ![grn]  -1.15% |
 | C (auto-increment PK, ext UUID)   | ![grn]  -2.88% | ![grn]  -0.70% | ![grn]  +2.79% | ![grn]  -3.45% |
+
+#### `order_counts_by_status` summary for PostgreSQL
+
+For PostgreSQL, there was virtually no difference in queries per second for any
+initial database size or schema design. There was only a single result (for the
+"medium" initial database size and 2 concurrent threads) where the performance
+delta was greater than 4.99%. I view this as a slight anomaly based on the
+remainder of the consistent results. Perhaps some vacuuming or auto-cleanup
+activity occurred during that particular run.
 
 ### Lookup customer orders results
 
@@ -894,7 +949,7 @@ The following table shows the differences in TPS compared to schema design "A".
 | Schema design                     |   1            |   2            |    4           |      8         |
 | --------------------------------- | --------------:| --------------:| --------------:| --------------:|
 | B (UUID PKs only)                 | ![org]  -7.65% | ![grn]  -3.61% | ![org]  -6.16% | ![org]  -5.76% |
-| C (auto-increment PK, ext UUID)   | ![red]  -17.95% | ![org] -11.01% | ![org] -14.49% | ![org] -11.06% |
+| C (auto-increment PK, ext UUID)   | ![red] -17.95% | ![org] -11.01% | ![org] -14.49% | ![org] -11.06% |
 
 #### `lookup_orders_by_customer` QPS / MySQL / Large DB size
 
@@ -911,7 +966,54 @@ The following table shows the differences in TPS compared to schema design "A".
 | Schema design                     |   1            |   2            |    4           |      8         |
 | --------------------------------- | --------------:| --------------:| --------------:| --------------:|
 | B (UUID PKs only)                 | ![red] -23.11% | ![red] -20.34% | ![red] -36.83% | ![red] -51.92% |
-| C (auto-increment PK, ext UUID)   | ![grn]   -0.95% | ![grn]  -4.23% | ![grn]  -4.53% | ![org]  -6.00% |
+| C (auto-increment PK, ext UUID)   | ![grn]  -0.95% | ![grn]  -4.23% | ![grn]  -4.53% | ![org]  -6.00% |
+
+#### `lookup_orders_by_customer` summary for MySQL
+
+This scenario is all about showing the impact of the primary key column type on
+the performance of `JOIN` operations.
+
+`JOIN` operations (specifically the `eq_join` operation that will satisfy an
+`ON` condition containing an equality comparator) will read index records from
+both sides of the `JOIN`, comparing the values of the fields in the `ON` clause
+to determine if the table record meets the equality condition.
+
+Clearly, the greater the number of index records that can be placed in a single
+page in memory for this comparison work, the faster the work will be completed
+and thus the faster the `JOIN` operation will be.
+
+The `SELECT` statement involved in this scenario required one additional `JOIN`
+for schema design "C" -- in order to do the lookup of internal customer integer
+ID from the external customer UUID. Therefore, I expected to see a small
+performance decrease for schema design "C" compared to schema design "A" across
+all initial database sizes.
+
+For schema design "B", I expected to see similar performance to schema design
+"A" for database sizes that could fit entirely in the InnoDB buffer pool and a
+small to medium decrease in performance once the database could no longer fit
+in memory.
+
+The results we see for this scenario *mostly* matched my expectations, with a
+couple surprises.
+
+First, I was surprised to see schema design "C" perform poorly in the smaller
+initial database sizes compared to schema design "A". A single additional
+`eq_join` operation to match the customer's internal integer identifier to the
+supplied external customer UUID resulted in a a greater than **10% decrease**
+in overall performance for both "small" and "medium" initial database sizes. I
+had expected to see this number more in the 5% or less range.
+
+Secondly, I was surprised by the drop-off in performance of schema design "B"
+at the "large" initial database size. I expected some amount of negative
+impact, but clearly once the database no longer fits in resident memory, the
+impact of primary key column type really starts to show up. At 8 concurrent
+threads, schema design "B" had a **greater than 50% decrease** in performance
+compared to schema design "A".
+
+By contrast, once the database no longer fit in resident memory, schema design
+"C" started to shine. We no longer see the 10%+ decrease in performance
+compared to schema design "A" and instead modest decreases in performance of 5%
+or less.
 
 #### `lookup_orders_by_customer` QPS / PostgreSQL / Small DB size
 
@@ -963,6 +1065,22 @@ The following table shows the differences in TPS compared to schema design "A".
 | --------------------------------- | --------------:| --------------:| --------------:| --------------:|
 | B (UUID PKs only)                 | ![grn]  -0.97% | ![grn]  -1.83% | ![org]  -7.04% | ![org]  -6.24% |
 | C (auto-increment PK, ext UUID)   | ![grn]  +3.81% | ![org]  -9.62% | ![grn]  -2.95% | ![org]  -6.75% |
+
+#### `lookup_orders_by_customer` summary for PostgreSQL
+
+For PostgreSQL, as was the case for the `order_counts_by_status` scenario, we
+saw less of a performance degradation between schema design "A" for both schema
+design "B" and "C".
+
+For the "small" and "medium" initial database sizes, we see a greater decrease
+in performance for schema design "C" at higher concurrency levels. This can be
+explained by the extra `JOIN` to the customers table that is necessary to
+satisfy the external to internal identifier lookup.
+
+For the "large" initial database size, results were inconclusive. I can detect
+no discernable difference between schema design "B" and schema design "C" when
+compared to the performance of schema design "A". I may re-run this particular
+benchmark for larger-still initial database sizes and see if a pattern emerges.
 
 ### Lookup most popular items results
 
@@ -1025,6 +1143,35 @@ The following table shows the differences in TPS compared to schema design "A".
 | B (UUID PKs only)                 | ![red] -68.75% | ![red] -68.96% | ![red] -78.00% | ![red] -83.82% |
 | C (auto-increment PK, ext UUID)   | ![grn]  +0.00% | ![grn]  +3.44% | ![grn]  +4.00% | ![grn]  +7.35% |
 
+#### `popular_items` summary for MySQL
+
+This scenario shows the impact of the primary key column type on the
+performance of a complex aggregate query with multiple joined tables.
+
+I expected schema design "B" to exhibit poorer performance than schema design
+"A" due to the increased index record size. Since the `SELECT` query touches
+each row in our fact table (`order_details`) and performs a join to both the
+`products` and `suppliers` tables to get product and supplier names, lots of
+I/O is done with each execution of the `SELECT` query. Because larger index
+records means more I/O to perform to complete the same calculations, I expected
+schema design "B" to suffer compared to schema design "A".
+
+And suffer it did.
+
+Even on the "small" initial database sizes, schema design "B" performed around
+**28% worse** than schema design "A". The "medium" initial database size was
+around **20% worse** and the "large" initial database size was more than a
+whopping **70% worse** than schema design "A".
+
+We see that the 4X increase in secondary index record size results in terrible
+performance when so many fewer index pages can be spooled into memory compared
+to the schema designs with smaller primary key column types.
+
+Interestingly, we see that schema design "C" actually **performs better** than
+schema design "A" for this scenario. I'm puzzled why this is the case, but
+strangely we see a similar (though less exaggerated) effect in the PostgreSQL
+results for this scenario, so I don't believe it to be an anomaly.
+
 #### `popular_items` QPS / PostgreSQL / Small DB size
 
 ![Popular items - PostgreSQL - small DB](uuid-vs-integer/images/popular_items-pgsql-small.png "PostgreSQL - Small DB - Popular items queries per second")
@@ -1076,9 +1223,60 @@ The following table shows the differences in TPS compared to schema design "A".
 | B (UUID PKs only)                 | ![red] -21.05% | ![red] -16.17% | ![red] -23.70% | ![red] -23.07% |
 | C (auto-increment PK, ext UUID)   | ![grn]  +0.00% | ![grn]  +5.88% | ![grn]  -0.74% | ![grn]  +1.02% |
 
+#### `popular_items` summary for PostgreSQL
+
+The impact of primary key column type was most evident for the `popular_items`
+scenario for PostgreSQL. As was the case for MySQL, we see a **consistent and
+significant performance degradation** for schema design "B" at all initial
+database sizes and concurrency levels.
+
+While the "small" initial database size saw schema design "B" perform around
+**10% slower** than schema design "A", the larger initial database sizes saw
+between **20 and 32% slowdowns at all concurrency levels**.
+
+For schema design "C", we see a similar pattern emerge as we saw with the MySQL
+results. Schema design "C" performs comparable to schema design "A" but for the
+"large" initial database size, we see schema design "C" comparable to or
+outperforming schema design "A" pretty consistently at all concurrency levels.
+
 ## Conclusions
 
-TODO
+So what conclusions and recommendations can we draw from these benchmark
+results?
+
+For starters, I think we can definitively say that **the choice of
+sequentially-generated integers versus randomly-generated has a _real and
+demonstrable_ impact on the performance of both read and write workloads for
+both MySQL and PostgreSQL**.
+
+While **the impact on performance was smaller for PostgreSQL**, for certain
+workloads involving writes and complex aggregate queries, the impact is
+definitely apparent. This smaller impact can likely be attributed to
+PostgreSQL's native UUID type, which stores UUID values more compactly than the
+`CHAR(36)` column type used for MySQL in these benchmarks.
+
+For **MySQL**, the impact of primary key column type is **greatly exaggerated when
+the size of the database exceeds the InnoDB buffer pool**.
+
+For all scenarios with MySQL, the **"large" initial database size** -- which
+contained a fact table larger than the entire InnoDB buffer pool -- showed that
+**schema design "B" performed poorly compared to schema design "A"**. At the
+"large" initial database size, **schema design "B" performed poorly compared to
+schema design "C"** even after accounting for the additional reads and/or joins
+required by schema design "C".
+
+Due to the scale-out / sharding problems inherent with using auto-incrementing
+integers as **external identifiers**, my recommendation is to **use UUIDs for
+your application's external identifiers**.
+
+If you are going to use UUIDs as your application's external identifiers, then
+your choice is between schema design "B" and schema design "C". I think based
+on the results contained in this benchmark, I would recommend going with schema
+design "C" to avoid some of the performance problems for **some workloads** at
+higher concurrency and database sizes.
+
+Your comments, concerns and questions are most welcome. Either tweet me
+[@jaypipes](https://twitter.com/jaypipes) or log an [Issue on Github](https://github.com/jaypipes/articles/issues) for this article.
 
 [red]: https://placehold.it/15/f03c15/000000?text=+
 [org]: https://placehold.it/15/ff9933/000000?text=+
