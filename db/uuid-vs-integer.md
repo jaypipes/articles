@@ -1236,12 +1236,47 @@ between **20 and 32% slowdowns at all concurrency levels**.
 
 For schema design "C", we see a similar pattern emerge as we saw with the MySQL
 results. Schema design "C" performs comparable to schema design "A" but for the
-"large" initial database size, we see schema design "C" outperforming schema
-design "A" pretty consistently at all concurrency levels.
+"large" initial database size, we see schema design "C" comparable to or
+outperforming schema design "A" pretty consistently at all concurrency levels.
 
 ## Conclusions
 
-TODO
+So what conclusions and recommendations can we draw from these benchmark
+results?
+
+For starters, I think we can definitively say that *the choice of
+sequentially-generated integers versus randomly-generated has a _real and
+demonstrable_ impact on the performance of both read and write workloads for
+both MySQL and PostgreSQL*.
+
+While **the impact on performance was smaller for PostgreSQL**, for certain
+workloads involving writes and complex aggregate queries, the impact is
+definitely apparent. This smaller impact can likely be attributed to
+PostgreSQL's native UUID type, which stores UUID values more compactly than the
+`CHAR(36)` column type used for MySQL in these benchmarks.
+
+For **MySQL**, the impact of primary key column type is **greatly exaggerated when
+the size of the database exceeds the InnoDB buffer pool**.
+
+For all scenarios with MySQL, the **"large" initial database size** -- which
+contained a fact table larger than the entire InnoDB buffer pool -- showed that
+**schema design "B" performed poorly compared to schema design "A"**. At the
+"large" initial database size, **schema design "B" performed poorly compared to
+schema design "C"** even after accounting for the additional reads and/or joins
+required by schema design "C".
+
+Due to the scale-out / sharding problems inherent with using auto-incrementing
+integers as **external identifiers**, my recommendation is to **use UUIDs for
+your application's external identifiers**.
+
+If you are going to use UUIDs as your application's external identifiers, then
+your choice is between schema design "B" and schema design "C". I think based
+on the results contained in this benchmark, I would recommend going with schema
+design "C" to avoid some of the performance problems for **some workloads** at
+higher concurrency and database sizes.
+
+Your comments, concerns and questions are most welcome. Either tweet me
+[@jaypipes](https://twitter.com/jaypipes) or log an [Issue on Github](https://github.com/jaypipes/articles/issues) for this article.
 
 [red]: https://placehold.it/15/f03c15/000000?text=+
 [org]: https://placehold.it/15/ff9933/000000?text=+
