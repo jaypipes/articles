@@ -1143,6 +1143,35 @@ The following table shows the differences in TPS compared to schema design "A".
 | B (UUID PKs only)                 | ![red] -68.75% | ![red] -68.96% | ![red] -78.00% | ![red] -83.82% |
 | C (auto-increment PK, ext UUID)   | ![grn]  +0.00% | ![grn]  +3.44% | ![grn]  +4.00% | ![grn]  +7.35% |
 
+#### `popular_items` summary for MySQL
+
+This scenario shows the impact of the primary key column type on the
+performance of a complex aggregate query with multiple joined tables.
+
+I expected schema design "B" to exhibit poorer performance than schema design
+"A" due to the increased index record size. Since the `SELECT` query touches
+each row in our fact table (`order_details`) and performs a join to both the
+`products` and `suppliers` tables to get product and supplier names, lots of
+I/O is done with each execution of the `SELECT` query. Because larger index
+records means more I/O to perform to complete the same calculations, I expected
+schema design "B" to suffer compared to schema design "A".
+
+And suffer it did.
+
+Even on the "small" initial database sizes, schema design "B" performed around
+**11% worse** than schema design "A". The "medium" initial database size was
+around **30% worse** and the "large" initial database size was around **21%
+worse** than schema design "A".
+
+We see that the 4X increase in secondary index record size results in terrible
+performance when so much fewer index pages can be spooled into memory compared
+to the schema designs with smaller primary key column types.
+
+Interestingly, we see that schema design "C" actually **performs better** than
+schema design "A" for this scenario. I'm puzzled why this is the case, but
+strangely we see a similar (though less exaggerated) effect in the PostgreSQL
+results for this scenario, so I don't believe it to be an anomaly.
+
 #### `popular_items` QPS / PostgreSQL / Small DB size
 
 ![Popular items - PostgreSQL - small DB](uuid-vs-integer/images/popular_items-pgsql-small.png "PostgreSQL - Small DB - Popular items queries per second")
