@@ -12,9 +12,9 @@ metrics are both very important, focusing on them exclusively leaves out a
 number of critical points from the overall discussion of application
 performance, scaling strategies and query efficiency.
 
-In addition, most of the articles I've read look strictly at MySQL (and InnoDB
+In addition, most of the articles I've read look strictly at [MySQL](https://www.mysql.com) (and InnoDB
 storage engine) performance and don't touch the other great open source
-database server, PostgreSQL.
+database server, [PostgreSQL](https://postgresql.org).
 
 In this article, I  aim to provide a thorough data-backed comparison of UUID
 and integer field performance for both MySQL and PostgreSQL. We'll be examining
