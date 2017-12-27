@@ -1244,10 +1244,10 @@ outperforming schema design "A" pretty consistently at all concurrency levels.
 So what conclusions and recommendations can we draw from these benchmark
 results?
 
-For starters, I think we can definitively say that *the choice of
+For starters, I think we can definitively say that **the choice of
 sequentially-generated integers versus randomly-generated has a _real and
 demonstrable_ impact on the performance of both read and write workloads for
-both MySQL and PostgreSQL*.
+both MySQL and PostgreSQL**.
 
 While **the impact on performance was smaller for PostgreSQL**, for certain
 workloads involving writes and complex aggregate queries, the impact is
