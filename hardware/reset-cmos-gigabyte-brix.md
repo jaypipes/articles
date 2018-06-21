@@ -91,19 +91,51 @@ following picture. Unscrew this screw and place to the side.
 
 ![figure 4. remove inner screw](images/gigabyte-brix-remove-inner-screw.jpg)
 
-Once that screw is removed, you will want to *gently* wiggle the circuitboard
-upwards and towards you.
-
-![figure 5. remove primary circuitboard](images/gigabyte-brix-remove-top-circuitboard.jpg)
-
 Note that there are two wires labeled "main" and "aux" going into one of the
 components on the top side of the circuitboard:
 
-![figure 6. detach main/aux wires](images/gigabyte-brix-detach-main-aux.jpg)
+![figure 5. detach main/aux wires](images/gigabyte-brix-detach-main-aux.jpg)
 
 while you can complete the reset without detaching these wires, it's a little
 tricky, so you can just gently pop each of those wires off before you slide the
 primary circuitboard out.
+
+Once the one screw is removed and you've detached the "main" and "aux" wires,
+you will want to *gently* wiggle the circuitboard upwards and towards you.
+
+![figure 6. remove primary circuitboard](images/gigabyte-brix-remove-top-circuitboard.jpg)
+
+### Step 3: Disconnect the CMOS battery
+
+Once you've remove the primary circuitboard, turn it over and you will see the
+bright yellow CMOS battery. Disconnect the tiny CMOS battery connector by
+gently squeezing the inside of the connector and lifting.
+
+![figure 6. disconnect CMOS battery](images/gigabyte-brix-disconnect-battery.jpg)
+
+Next, wait around 2-3 minutes. I have no idea on exactly how long one should
+wait for the CMOS to be reset, but most things I found on the web indicate a
+couple minutes or more.
+
+### Step 4: Reattach and reassemble the hardware
+
+Finally, go ahead and reassemble/reattach everything you've just disconnected. In order:
+
+* Reconnect the CMOS battery
+* Gently slip the primary circuitboard back in place
+* Reattach the "main" and "aux" wires by gently and carefully slipping the
+  connectors over the metal prongs for each wire
+* Replace the inner screw that secures the primary circuitboard to the inner
+  casing mold
+* Slide the rear metal panel back into place
+* Replace the bottom outer plate
+* Replace the four outer screws holding the bottom plate to the case
+* Reconnect all your peripherals
+* Reconnect the power cord
+
+Afterwards, you should be able to power on your BRIX, hit the `Delete` key
+during power on and see the BIOS menu where you can change the boot order of
+your machine!
 
 [1]
 
