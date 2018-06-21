@@ -73,13 +73,13 @@ case. The bottom shell plate will most likely house an SSD drive along with the
 drive connector to the motherboard. You should be able to gently set the bottom
 plate to the side of the casing.
 
-![figure 2. remove bottom plate](images/gigabyte-brix-lift-first-shell.jpg)
+![figure 2. remove bottom plate](images/gigbyte-brix-lift-first-shell.jpg)
 
 Once you've placed the bottom plate next to the case, remove the rear metal
 panel by simply sliding it upwards. This will expose the side of the main
 circuitboard which you will be removing shortly.
 
-![figure 3. remove rear metal panel](images/gigabyte-brix-slide-rear-panel.jpg)
+![figure 3. remove rear metal panel](images/gigabyte-brix-slide-rear-plate.jpg)
 
 ### Step 2: Remove circuitboard
 
