@@ -1,5 +1,3 @@
-# Redoing OpenStack
-
 Jess Frazelle's [tweet](https://twitter.com/jessfraz/status/1023550446026276864) this morning got me thinking. [1]
 
 ![Jess Frazelle's original tweet](images/jesstweet.png "Jess Frazelle's original tweet that got me thinking")
@@ -36,62 +34,6 @@ and talented individuals in my time in the community.
 All this to say that I feel I do have the required background and knowledge to
 at least put forth a coherent vision for Project Mulligan and that I am as much
 responsible as anyone else for the mess that OpenStack has become.
-
-## Redoing the community
-
-### Different strokes for different folks
-
-#### Slack and IRC
-
-#### Gerrit, Github, and code flows
-
-#### Mailing lists, Slack and Google Docs
-
-Things that bother me about Kubernetes, from a community perspective.
-
-* Many questions on the Kubernetes user mailing list seem to be for specific
-  vendor *products* -- i.e. Google Cloud Platform, Google Kubernetes Engine,
-etc -- instead of being about Kubernetes itself. This is indicative of the
-tight coupling between the Kubernetes project and the vendors that host a
-Kubernetes SaaS offering.  While there are occasionally questions on the
-OpenStack mailing lists about a particular distribution of OpenStack --
-Mirantis OpenStack/Fuel, Red Hat OpenStack Platform or RDO, etc -- not only are
-these questions rare, but they are often answered with pointers to the vendor's
-support organization or bug tracker. In addition, you don't see questions about
-getting support for one of the public clouds that run OpenStack. This doesn't
-seem to be the case for Kubernetes, where the vendored SaaS offerings don't
-seem to be distinguishable from the open source project itself
-
-#### Focus on maintainerism over stat padders
-
-I don't give a shit how many stars a github repo has. Likewise, I don't give a
-shit how many "+1" or "lgtm" code reviews a contributor has done.
-
-### "Yes is forever, no is temporary"
-
-OpenStack (as a whole as well as individual OpenStack projects) has suffered
-greatly from the inability of the maintainer community to say "no" (or even
-"fuck no").
-
-"But Jay, doesn't this mean that there will necessarily be a cabal of armchair
-architects that must approve every feature request or subsystem addition to
-Mulligan?"
-
-Some people think it's hard to say "no" to a feature request. Personally, I
-have no problem whatsoever saying "no" to virtually everything (saying "no" is
-basically my default answer to everyone other than my wife).
-
-Jess Frazelle's article entitled "[The Art of
-Closing](https://blog.jessfraz.com/post/the-art-of-closing/)" should be
-required reading for any contributor submitting a feature request and any
-maintainer looking for ways to not crush tender contributor feelings on a
-feature request (if that's the sort of thing that keeps you up at night).
-
-### Rewiring the mindset
-
-#### On programming language choice
-
-#### On fanboi-ism
 
 ## Redoing the mission
 
@@ -333,6 +275,8 @@ and only supported volume manager.
 
 Throw everything out and start over.
 
+Screw extensibility. Seriously, screw it.
+
 ## Redoing the API
 
 A project's API is its primary user interface. As such, its API is critically
@@ -349,11 +293,154 @@ Each OpenStack project has its own REST API, with the valiant API working group
 trying (in vain) to keep an eye out for consistency and issuing guidelines for
 projects to (fail to) use.
 
+The gripes I have with the various project REST APIs are virtually endless, so
+I'll just stick with a few major grievances here before talking up the wonders
+that Project Mulligan will bring to bear on the world of APIs.
+
 ### Project Mulligan's API
 
-No more REST.
+gRPC only. Versioned from the get-go with a sane set of clear rules for
+describing the evolution of the request and response payloads.
 
-gRPC only.
+No more inane and endless debates about "proper" REST-ness or HATEOS or which
+HTTP code thought up in the 1990s is more appropriate for describing a
+particular application failure.
+
+No more trying to shoehorn a control plane API into a data plane API or vice
+versa.
+
+## Redoing the community
+
+I have a number of thoughts about matters of community. My views on the subject
+have changed -- and continue to change. These views vary depending on the day
+of the week, whether I'm currently taking anti-depressants, and whether I've
+happened to upset more than three people in the last 24 hours while reviewing
+their code.
+
+After witnessing and participating in eight years of OpenStack's governance
+style, I'm eager for a change. Well, actually, a number of changes:
+
+* Death to bureaucracy
+* Less talk, more do
+* Vendors should wear helmets
+
+### Death to bureaucracy
+
+OpenStack has built up an extraordinary amount of process, bureaucracy and red
+tape over the years, most notably in the following areas:
+
+* Release cycles
+* Death by spec
+* Conferences
+
+#### Release cycles
+
+#### Death by spec
+
+#### Conferences
+
+### Less talk, more do
+
+I know that some colleagues in the community adore lengthy conversations on IRC
+and mailing list posts that meander around like a bored teenager on Quaaludes.
+
+However, I'm tired of talking. I want to see some action taken that really
+kicks Project Mulligan into high gear.
+
+We need a Linus Torvalds for Project Mulligan. A no-bullshit, this is how it's
+gonna be, type of person who is willing to say "oh fuck no" when needed. [3]
+
+Hell, let's have three of these not-necessarily-benevolent dictators. That way
+they can share the grief and bear the brunt of inevitable criticism that will
+pour forth from those who seek to commandeer Project Mulligan for their own
+devices.
+
+Speaking of that, let's talk a bit about vendors.
+
+### Vendors should wear helmets
+
+Vendors should be required to wear helmets at all times when visiting Project
+Mulligan. And not some silly London bobby helmet. I'm talking about those
+bright yellow construction helmets that both **announce intentions** as well
+as **protect brain matter**.
+
+Nothing gets my goat more than a vendor that isn't up front about their
+vendory-ness.
+
+I long to hear, just once, "hey, I'm aware this feature is a pet project of
+mine and really only helps me out" or even "yeah, I understand that this
+project is made up entirely of my own internal engineers and really its just a
+way for us to protect our intellectual property by being first to market and
+(ab)using the open source ecosystem for marketing and hiring advantages".
+
+Unfortunately, all too often, vendors pretend like there's nothing to see here;
+move along...
+
+I am sure that as people read this, some folks are thinking, "Hmm, am *I* a
+vendor?"
+
+Well, you might be a vendor if...
+
+* You only ask for features that further your own company's objectives
+* You cannot articulate why anyone other than your company would want a feature
+* You don't review code outside of your own company
+* You only work on code for a driver to enable your own company's technology
+* You can only provide links to internal documentation that first needs to go
+  through legal review in order for that link to be made public
+
+"But Jay, 95% of contributors to OpenStack work at some company that pays them
+to write code or work on deployment stuff for OpenStack. Don't shit where you
+eat, my friend."
+
+Yes, you're absolutely correct about that, my friend. And thank you for being
+concerned about my digestive system.
+
+That said, being "a vendor" is exhibiting a certain set of behaviours when
+participating (or not) in an open source community. Being "a vendor" doesn't
+mean "you work for a company".
+
+I'm afraid to be the bearer of bad news, but Project Mulligan, unlike
+OpenStack, isn't going to cater to the vendors. Project Mulligan won't kick
+vendors out, but at the same time, we're not going to go out of our way to
+deify "Platinum Members" or any such silliness. Vendors are free to take
+Project Mulligan's source code and use it for their own products, but the
+Project Mulligan community won't be spending its time promoting those products.
+
+Which brings me to something that bothers me about Kubernetes, from a community
+perspective.
+
+Many questions on the Kubernetes user mailing list seem to be for specific
+vendor *products* -- i.e. Google Cloud Platform, Google Kubernetes Engine, Red
+Hat OpenShift [4], etc -- instead of being about Kubernetes itself. This is
+indicative of the tight coupling between the Kubernetes project and the vendors
+that host a Kubernetes SaaS offering.  While there are occasionally questions
+on the OpenStack mailing lists about a particular distribution of OpenStack --
+Mirantis OpenStack/Fuel, Red Hat OpenStack Platform or RDO, etc -- not only are
+these questions rare, but they are often answered with pointers to the vendor's
+support organization or bug tracker. In addition, you don't see questions about
+getting support for one of the public clouds that run OpenStack. This doesn't
+seem to be the case for Kubernetes, where the vendored SaaS offerings don't
+seem to be distinguishable from the open source project itself. Or at least,
+they don't seem to be distinguishable for a great number of Kubernetes users.
+
+### Communication
+
+#### Slack and IRC
+
+#### Gerrit, Github, and code flows
+
+#### Mailing lists, Slack and Google Docs
+
+#### Focus on maintainerism over stat padders
+
+I don't give a shit how many stars a github repo has. Likewise, I don't give a
+shit how many "+1" or "lgtm" code reviews a contributor has done.
+
+### Rewiring the mindset
+
+#### On programming language choice
+
+#### On fanboi-ism
 
 ## Conclusion
 
@@ -375,3 +462,22 @@ now showing promise in the container world. Isn't it great to be able to walk
 away from your original ideas (granted, after a nice hiatus) and totally
 re-start without any of the baggage of the original stuff you wrote? I agree,
 which is why Project Mulligan will be a resounding success.
+
+[3] OpenStack (as a whole as well as individual OpenStack projects) has
+suffered greatly from the inability of the maintainer community to say "no" (or
+even "fuck no").
+
+Some people think it's hard to say "no" to a feature request. Personally, I
+have no problem whatsoever saying "no" to virtually everything (saying "no" is
+basically my default answer to everyone other than my wife).
+
+Jess Frazelle's article entitled "[The Art of
+Closing](https://blog.jessfraz.com/post/the-art-of-closing/)" should be
+required reading for any contributor submitting a feature request and any
+maintainer looking for ways to not crush tender contributor feelings on a
+feature request (if that's the sort of thing that keeps you up at night).
+
+[4] The *current* incarnation of OpenShift as of July 2018. They keep changing
+the damn thing's purpose, rewriting it in different languages, and gradually
+updating the websit that you never quite know what http://openshift.com will
+lead to in any given month.
