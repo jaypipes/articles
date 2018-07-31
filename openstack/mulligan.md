@@ -37,6 +37,62 @@ All this to say that I feel I do have the required background and knowledge to
 at least put forth a coherent vision for Project Mulligan and that I am as much
 responsible as anyone else for the mess that OpenStack has become.
 
+## Redoing the community
+
+### Different strokes for different folks
+
+#### Slack and IRC
+
+#### Gerrit, Github, and code flows
+
+#### Mailing lists, Slack and Google Docs
+
+Things that bother me about Kubernetes, from a community perspective.
+
+* Many questions on the Kubernetes user mailing list seem to be for specific
+  vendor *products* -- i.e. Google Cloud Platform, Google Kubernetes Engine,
+etc -- instead of being about Kubernetes itself. This is indicative of the
+tight coupling between the Kubernetes project and the vendors that host a
+Kubernetes SaaS offering.  While there are occasionally questions on the
+OpenStack mailing lists about a particular distribution of OpenStack --
+Mirantis OpenStack/Fuel, Red Hat OpenStack Platform or RDO, etc -- not only are
+these questions rare, but they are often answered with pointers to the vendor's
+support organization or bug tracker. In addition, you don't see questions about
+getting support for one of the public clouds that run OpenStack. This doesn't
+seem to be the case for Kubernetes, where the vendored SaaS offerings don't
+seem to be distinguishable from the open source project itself
+
+#### Focus on maintainerism over stat padders
+
+I don't give a shit how many stars a github repo has. Likewise, I don't give a
+shit how many "+1" or "lgtm" code reviews a contributor has done.
+
+### "Yes is forever, no is temporary"
+
+OpenStack (as a whole as well as individual OpenStack projects) has suffered
+greatly from the inability of the maintainer community to say "no" (or even
+"fuck no").
+
+"But Jay, doesn't this mean that there will necessarily be a cabal of armchair
+architects that must approve every feature request or subsystem addition to
+Mulligan?"
+
+Some people think it's hard to say "no" to a feature request. Personally, I
+have no problem whatsoever saying "no" to virtually everything (saying "no" is
+basically my default answer to everyone other than my wife).
+
+Jess Frazelle's article entitled "[The Art of
+Closing](https://blog.jessfraz.com/post/the-art-of-closing/)" should be
+required reading for any contributor submitting a feature request and any
+maintainer looking for ways to not crush tender contributor feelings on a
+feature request (if that's the sort of thing that keeps you up at night).
+
+### Rewiring the mindset
+
+#### On programming language choice
+
+#### On fanboi-ism
+
 ## Redoing the mission
 
 When OpenStack began, we dreamt big. The mission of OpenStack was big, bold and
