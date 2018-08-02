@@ -6,13 +6,21 @@ What if I could go back and undo basically the last eight years and remake
 OpenStack (whatever "OpenStack" has come to entail)? What if we could have a
 big do-over?
 
-In this article, I will be describing "Project Mulligan", the OpenStack Redo.
-This is a highly opinionated reflection on what I personally would change about
-the world I've lived in for nearly a decade.
+In this two-part blog post, I will be describing "Project Mulligan", the
+OpenStack Redo.
+
+This first post is all about **community**, **governance**, **release cycle**,
+**mission** and **scope**.
+
+The [second part](mulligan-architecture.md) is all about the **architecture**
+and **technology choices** that Project Mulligan will employ.
+
+This is obviously a highly opinionated reflection on what I personally would
+change about the world I've lived in for nearly a decade.
 
 I'm bound to offend lots of people along the way in both the OpenStack and
 Kubernetes communities. Sorry in advance. Try not to take things personally --
-in many cases I'm referring to myself as much as anyone else and so feel free
+in many cases I'm referring as much to myself as anyone else and so feel free
 to join me on this self-deprecating journey.
 
 ## Background
@@ -35,6 +43,141 @@ All this to say that I feel I do have the required background and knowledge to
 at least put forth a coherent vision for Project Mulligan and that I am as much
 responsible as anyone else for the mess that OpenStack has become.
 
+## Redoing the community
+
+I have a number of thoughts about matters of community. My views on the subject
+have changed -- and continue to change. These views vary depending on the day
+of the week, whether I'm currently taking anti-depressants, and whether I've
+happened to upset more than three people in the last 24 hours while reviewing
+their code.
+
+After witnessing and participating in eight years of OpenStack's governance
+style, I'm eager for a change. Well, actually, a number of changes:
+
+* Death to bureaucracy
+* Less talk, more do
+* Vendors should wear helmets
+
+### Death to bureaucracy
+
+OpenStack has built up an extraordinary amount of process, bureaucracy and red
+tape over the years, most notably in the following areas:
+
+* Release cycles
+* Death by spec
+* Conferences
+
+#### Release cycles
+
+#### Death by spec
+
+#### Conferences
+
+### Less talk, more do
+
+I know that some colleagues in the community adore lengthy conversations on IRC
+and mailing list posts that meander around like a bored teenager on Quaaludes.
+
+However, I'm tired of talking. I want to see some action taken that really
+kicks Project Mulligan into high gear.
+
+We need a Linus Torvalds for Project Mulligan. A no-bullshit, this is how it's
+gonna be, type of person who is willing to say "oh fuck no" when needed. [2]
+
+Hell, let's have three of these not-necessarily-benevolent dictators. That way
+they can share the grief and bear the brunt of inevitable criticism that will
+pour forth from those who seek to commandeer Project Mulligan for their own
+devices.
+
+Speaking of that, let's talk a bit about vendors.
+
+### Vendors should wear helmets
+
+Vendors should be required to wear helmets at all times when visiting Project
+Mulligan. And not some silly London bobby helmet. I'm talking about those
+bright yellow construction helmets that both **announce intentions** as well
+as **protect brain matter**.
+
+Nothing gets my goat more than a vendor that isn't up front about their
+vendory-ness.
+
+I long to hear, just once, "hey, I'm aware this feature is a pet project of
+mine and really only helps me out" or even "yeah, I understand that this
+project is made up entirely of my own internal engineers and really its just a
+way for us to protect our intellectual property by being first to market and
+(ab)using the open source ecosystem for marketing and hiring advantages".
+
+Unfortunately, all too often, vendors pretend like there's nothing to see here;
+move along...
+
+I am sure that as people read this, some folks are thinking, "Hmm, am *I* a
+vendor?"
+
+Well, you might be a vendor if...
+
+* You only ask for features that further your own company's objectives
+* You cannot articulate why anyone other than your company would want a feature
+* You don't review code outside of your own company
+* You only work on code for a driver to enable your own company's technology
+* You can only provide links to internal documentation that first needs to go
+  through legal review in order for that link to be made public
+
+"But Jay, 95% of contributors to OpenStack work at some company that pays them
+to write code or work on deployment stuff for OpenStack. Don't shit where you
+eat, my friend."
+
+Yes, you're absolutely correct about that, my friend. And thank you for being
+concerned about my digestive system.
+
+That said, being "a vendor" is exhibiting a certain set of behaviours when
+participating (or not) in an open source community. Being "a vendor" doesn't
+mean "you work for a company".
+
+I'm afraid to be the bearer of bad news, but Project Mulligan, unlike
+OpenStack, isn't going to cater to the vendors. Project Mulligan won't kick
+vendors out, but at the same time, we're not going to go out of our way to
+deify "Platinum Members" or any such silliness. Vendors are free to take
+Project Mulligan's source code and use it for their own products, but the
+Project Mulligan community won't be spending its time promoting those products.
+
+Which brings me to something that bothers me about Kubernetes, from a community
+perspective.
+
+Many questions on the Kubernetes user mailing list seem to be for specific
+vendor *products* -- i.e. Google Cloud Platform, Google Kubernetes Engine, Red
+Hat OpenShift [3], etc -- instead of being about Kubernetes itself. This is
+indicative of the tight coupling between the Kubernetes project and the vendors
+that host a Kubernetes SaaS offering.  While there are occasionally questions
+on the OpenStack mailing lists about a particular distribution of OpenStack --
+Mirantis OpenStack/Fuel, Red Hat OpenStack Platform or RDO, etc -- not only are
+these questions rare, but they are often answered with pointers to the vendor's
+support organization or bug tracker. In addition, you don't see questions about
+getting support for one of the public clouds that run OpenStack.
+
+This doesn't seem to be the case for Kubernetes, where the vendored SaaS
+offerings don't seem to be distinguishable from the open source project itself.
+Or at least, they don't seem to be distinguishable for a great number of
+Kubernetes users.
+
+### Communication
+
+#### Slack and IRC
+
+#### Gerrit, Github, and code flows
+
+#### Mailing lists, Slack and Google Docs
+
+#### Focus on maintainerism over stat padders
+
+I don't give a shit how many stars a github repo has. Likewise, I don't give a
+shit how many "+1" or "lgtm" code reviews a contributor has done.
+
+### Rewiring the mindset
+
+#### On programming language choice
+
+#### On fanboi-ism
+
 ## Redoing the mission
 
 When OpenStack began, we dreamt big. The mission of OpenStack was big, bold and
@@ -43,7 +186,7 @@ operating system**.
 
 The #1 goal in those days was expansion. Specifically, expansion of **user
 footprint** and **industry mindshare**. It was all about quantity versus
-quality.
+quality. Get as much of the pie as possible.
 
 As time rolled on, the mission got wordier, but remained as massive and vague
 as "cloud operating system" ever was. In 2013, the mission looked like this:
@@ -178,273 +321,12 @@ by not including in Project Mulligan's scope any of the following:
 Are these things important? Yep. Well, OK, maybe not AmigaOS. Do I want them in
 Project Mulligan's mission statement or scope? No. No, I don't.
 
-## Redoing the architecture
-
-There are three areas of "software system architecture" that I'd like to
-discuss in relation to OpenStack and Project Mulligan:
-
-* **component layout**: the topology of the system's components and how
-  components communicate with each other
-* **dependencies**: the technology choices a project makes
-  regarding dependencies and implementation
-* **extensibility**: the degree to which a project tolerates flexibility of
-  underlying implementation
-
-### OpenStack's architecture
-
-OpenStack has no coherent architecture. Period.
-
-Within OpenStack, different projects are designed in very different ways, with
-the individual contributors on a project team making decisions about how that
-project is structured, what technologies should be dependencies, and how
-opinionated the implementation should be (or conversely, how extensible it
-should be made)
-
-Some projects, like Swift, are highly opinionated in their implementation and
-design. Other projects, like Neutron, go out of their way to enable
-extensibility and avoid making any sort of choice when it comes to underlying
-implementation or hardware support.
-
-Taking a further look at Swift, we see it is designed using a top-level router
-topology with various server components fulfilling the needs of different parts
-of the request (object storage/retrieval, container and account metadata
-lookup, etc). There's no message queue, no centralized database (Swift
-replicates SQLite database files from one container/account server to another)
-and the object servers require filesystems with xattr support in order to do
-their work. Swift's authors didn't build extensibility into how their object
-metadata storage worked. They just said "hey, you need a filesystem with xattr
-support".  Similarly, the authors didn't go out of their way to allow
-PostgreSQL to be used for container and account data. Instead, they chose to
-replicate SQLite database files and have stuck with that design choice since
-day one.
-
-Looking at Neutron, we see the opposite of Swift. From a component layout
-perspective, we see a top-level API server that communicates via a message bus
-to one or more agent services. There is a centralized database that stores
-object model information but much of Neutron's design is predicated on a plugin
-system that does the actual work of wiring up an L2 network. Layer 3 networking
-in Neutron always felt like it was bolted on and not really part of Neutron's
-natural worldview. [2]
-
-Nearly everything about Neutron is extensible. Everything is a driver or plugin
-or API extension. While there is a top-level API server, in many deployments it
-does little more than forward requests on to a vendor-specific driver that does
-"the real work", with the driver (hopefully) saving some information about the
-work it did in Neutron's database.
-
-Still other projects, like Nova, have dependencies on traditional databases and
-brokered message queues, a component layout that was designed to address a
-specific scale problem but causes many other problems and a confusing blend of
-highly extensible, sometimes extensible, and extensible-in-name-only approaches
-to underlying technology choices.
-
-Nova's component layout features a top-level API server, similar to Neutron and
-Swift. From there, however, there's virtually nothing the same about Nova. Nova
-uses a system of "cells" which are designed as scaling domains for the
-technology underpinning Nova's component communications: a brokered message
-queue for communicating between various system services and a traditional
-relational database system for storing and retrieving state.
-
-Take old skool RPC with all the operational pitfalls and headaches of using
-RabbitMQ and AMQP. Then tack on eight years of abusing the database for more
-than relational data and horrible database schema inefficiencies. Finally,
-overcomplicate both database connectivity and data migration because of a
-couple operators' poor choices and inexperienced developers early in
-the development of Nova. And you've got the ball of spaghetti that Nova's
-component layout and technology choice currently entails.
-
-As for Nova's extensibility, it varies. There is a virt driver interface that
-allows different hypervisors (and Ironic for baremetal) to perform the
-on-compute-node actions needed to start, stop, pause and terminate a VM
-instance. There are some out-of-tree virt drivers that ostensibly try to keep
-up with the virt driver interface, but it isn't technically public so it's
-mostly a "use with caution and good luck with that" affair. The scheduler
-component in Nova used to be ludicrously extensible, with support for all sorts
-of out-of-tree filters, weighers, even whole replacement scheduler drivers.
-That sucked, since there was no way to change anything without breaking the
-world. So now, we've removed a good deal of the extensibility in the scheduler
-in order to return some level of sanity there.
-
-Similarly, we used to give operators the ability to whole-hog replace entire
-subsystems like the networking driver with an out-of-tree driver of their own
-making. We no longer allow this kind of madness. Neutron is the only supported
-networking driver at this time. Same for volume management. Cinder is the one
-and only supported volume manager.
-
-### Project Mulligan's architecture
-
-Throw everything out and start over.
-
-Screw extensibility. Seriously, screw it.
-
-## Redoing the API
-
-A project's API is its primary user interface. As such, its API is critically
-important to both the success of the project as well as the project's perceived
-quality and ease of use.
-
-If I could change OpenStack's API, what would I change for Project Mulligan?
-
-### OpenStack's API
-
-OpenStack has no coherent API. Period.
-
-Each OpenStack project has its own REST API, with the valiant API working group
-trying (in vain) to keep an eye out for consistency and issuing guidelines for
-projects to (fail to) use.
-
-The gripes I have with the various project REST APIs are virtually endless, so
-I'll just stick with a few major grievances here before talking up the wonders
-that Project Mulligan will bring to bear on the world of APIs.
-
-### Project Mulligan's API
-
-gRPC only. Versioned from the get-go with a sane set of clear rules for
-describing the evolution of the request and response payloads.
-
-No more inane and endless debates about "proper" REST-ness or HATEOS or which
-HTTP code thought up in the 1990s is more appropriate for describing a
-particular application failure.
-
-No more trying to shoehorn a control plane API into a data plane API or vice
-versa.
-
-## Redoing the community
-
-I have a number of thoughts about matters of community. My views on the subject
-have changed -- and continue to change. These views vary depending on the day
-of the week, whether I'm currently taking anti-depressants, and whether I've
-happened to upset more than three people in the last 24 hours while reviewing
-their code.
-
-After witnessing and participating in eight years of OpenStack's governance
-style, I'm eager for a change. Well, actually, a number of changes:
-
-* Death to bureaucracy
-* Less talk, more do
-* Vendors should wear helmets
-
-### Death to bureaucracy
-
-OpenStack has built up an extraordinary amount of process, bureaucracy and red
-tape over the years, most notably in the following areas:
-
-* Release cycles
-* Death by spec
-* Conferences
-
-#### Release cycles
-
-#### Death by spec
-
-#### Conferences
-
-### Less talk, more do
-
-I know that some colleagues in the community adore lengthy conversations on IRC
-and mailing list posts that meander around like a bored teenager on Quaaludes.
-
-However, I'm tired of talking. I want to see some action taken that really
-kicks Project Mulligan into high gear.
-
-We need a Linus Torvalds for Project Mulligan. A no-bullshit, this is how it's
-gonna be, type of person who is willing to say "oh fuck no" when needed. [3]
-
-Hell, let's have three of these not-necessarily-benevolent dictators. That way
-they can share the grief and bear the brunt of inevitable criticism that will
-pour forth from those who seek to commandeer Project Mulligan for their own
-devices.
-
-Speaking of that, let's talk a bit about vendors.
-
-### Vendors should wear helmets
-
-Vendors should be required to wear helmets at all times when visiting Project
-Mulligan. And not some silly London bobby helmet. I'm talking about those
-bright yellow construction helmets that both **announce intentions** as well
-as **protect brain matter**.
-
-Nothing gets my goat more than a vendor that isn't up front about their
-vendory-ness.
-
-I long to hear, just once, "hey, I'm aware this feature is a pet project of
-mine and really only helps me out" or even "yeah, I understand that this
-project is made up entirely of my own internal engineers and really its just a
-way for us to protect our intellectual property by being first to market and
-(ab)using the open source ecosystem for marketing and hiring advantages".
-
-Unfortunately, all too often, vendors pretend like there's nothing to see here;
-move along...
-
-I am sure that as people read this, some folks are thinking, "Hmm, am *I* a
-vendor?"
-
-Well, you might be a vendor if...
-
-* You only ask for features that further your own company's objectives
-* You cannot articulate why anyone other than your company would want a feature
-* You don't review code outside of your own company
-* You only work on code for a driver to enable your own company's technology
-* You can only provide links to internal documentation that first needs to go
-  through legal review in order for that link to be made public
-
-"But Jay, 95% of contributors to OpenStack work at some company that pays them
-to write code or work on deployment stuff for OpenStack. Don't shit where you
-eat, my friend."
-
-Yes, you're absolutely correct about that, my friend. And thank you for being
-concerned about my digestive system.
-
-That said, being "a vendor" is exhibiting a certain set of behaviours when
-participating (or not) in an open source community. Being "a vendor" doesn't
-mean "you work for a company".
-
-I'm afraid to be the bearer of bad news, but Project Mulligan, unlike
-OpenStack, isn't going to cater to the vendors. Project Mulligan won't kick
-vendors out, but at the same time, we're not going to go out of our way to
-deify "Platinum Members" or any such silliness. Vendors are free to take
-Project Mulligan's source code and use it for their own products, but the
-Project Mulligan community won't be spending its time promoting those products.
-
-Which brings me to something that bothers me about Kubernetes, from a community
-perspective.
-
-Many questions on the Kubernetes user mailing list seem to be for specific
-vendor *products* -- i.e. Google Cloud Platform, Google Kubernetes Engine, Red
-Hat OpenShift [4], etc -- instead of being about Kubernetes itself. This is
-indicative of the tight coupling between the Kubernetes project and the vendors
-that host a Kubernetes SaaS offering.  While there are occasionally questions
-on the OpenStack mailing lists about a particular distribution of OpenStack --
-Mirantis OpenStack/Fuel, Red Hat OpenStack Platform or RDO, etc -- not only are
-these questions rare, but they are often answered with pointers to the vendor's
-support organization or bug tracker. In addition, you don't see questions about
-getting support for one of the public clouds that run OpenStack. This doesn't
-seem to be the case for Kubernetes, where the vendored SaaS offerings don't
-seem to be distinguishable from the open source project itself. Or at least,
-they don't seem to be distinguishable for a great number of Kubernetes users.
-
-### Communication
-
-#### Slack and IRC
-
-#### Gerrit, Github, and code flows
-
-#### Mailing lists, Slack and Google Docs
-
-#### Focus on maintainerism over stat padders
-
-I don't give a shit how many stars a github repo has. Likewise, I don't give a
-shit how many "+1" or "lgtm" code reviews a contributor has done.
-
-### Rewiring the mindset
-
-#### On programming language choice
-
-#### On fanboi-ism
-
-## Conclusion
-
-
+## On to the architecture and technology fun
+
+Are you now craving more fast and loose opinions on how OpenStack lost its way
+with its mission? Well, then, proceed apace to [part
+two](mulligan-architecture.md) for some tasty blather about blowing up the
+OpenStack technology and system architecture.
 
 ## Footnotes
 
@@ -454,16 +336,7 @@ that some negative aspects of the OpenStack ecosystem and approach have snuck
 into Kubernetes. Still, I think it's an interesting question to ponder,
 regardless.
 
-[2] This makes perfect sense considering the origins of the Neutron project,
-which was founded by folks from Nicira which ended up as VMWare's NSX
-technology -- an L2-centric software defined networking technology. FYI, some
-of those same people are the driving force behind the Cilium project that is
-now showing promise in the container world. Isn't it great to be able to walk
-away from your original ideas (granted, after a nice hiatus) and totally
-re-start without any of the baggage of the original stuff you wrote? I agree,
-which is why Project Mulligan will be a resounding success.
-
-[3] OpenStack (as a whole as well as individual OpenStack projects) has
+[2] OpenStack (as a whole as well as individual OpenStack projects) has
 suffered greatly from the inability of the maintainer community to say "no" (or
 even "fuck no").
 
@@ -477,7 +350,7 @@ required reading for any contributor submitting a feature request and any
 maintainer looking for ways to not crush tender contributor feelings on a
 feature request (if that's the sort of thing that keeps you up at night).
 
-[4] The *current* incarnation of OpenShift as of July 2018. They keep changing
+[3] The *current* incarnation of OpenShift as of July 2018. They keep changing
 the damn thing's purpose, rewriting it in different languages, and gradually
 updating the websit that you never quite know what http://openshift.com will
 lead to in any given month.
