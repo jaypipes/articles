@@ -216,33 +216,8 @@ happened to upset more than three people in the last 24 hours while reviewing
 their code.
 
 After witnessing and participating in eight years of OpenStack's governance
-style, I'm eager for a change. Well, actually, a number of changes:
-
-* Death to bureaucracy
-* Less talk, more do
-* Vendors should wear helmets
-
-### Death to bureaucracy
-
-OpenStack has built up an extraordinary amount of process, bureaucracy and red
-tape over the years, most notably in the following areas:
-
-* Release cycles
-* Death by spec
-* Conferences
-
-#### Release cycles
-
-Coordinated releases are a pain in the ass, and not something I feel is
-terribly important if there were less tight coupling of components.
-
-Don't care about long-term support (LTS) releases. If distributions want to
-support those, go for it. I personally don't feel it should be something an
-upstream development community should be involved in.
-
-#### Death by spec
-
-#### Conferences
+style, I'm eager for a change. Well, actually, a number of changes, presented
+here in no particular order.
 
 ### Less talk, more do
 
@@ -252,13 +227,14 @@ and mailing list posts that meander around like a bored teenager on Quaaludes.
 However, I'm tired of talking. I want to see some action taken that really
 kicks Project Mulligan into high gear.
 
-We need a Linus Torvalds for Project Mulligan. A no-bullshit, this is how it's
-gonna be, type of person who is willing to say "oh fuck no" when needed. [3]
+We need a Linus Torvalds [3] for Project Mulligan. A no-bullshit, this is how
+it's gonna be, type of person who is willing to say "oh fuck no" when needed.
+[4]
 
-Hell, let's have three of these not-necessarily-benevolent dictators. That way
-they can share the grief and bear the brunt of inevitable criticism that will
-pour forth from those who seek to commandeer Project Mulligan for their own
-devices.
+Hell, let's have *three* of these not-necessarily-benevolent dictators. That
+way they can share the grief and bear the brunt of inevitable criticism that
+will pour forth from those who seek to commandeer Project Mulligan for their
+own devices.
 
 Speaking of that, let's talk a bit about vendors.
 
@@ -272,11 +248,13 @@ as **protect brain matter**.
 Nothing gets my goat more than a vendor that isn't up front about their
 vendory-ness.
 
-I long to hear, just once, "hey, I'm aware this feature is a pet project of
-mine and really only helps me out" or even "yeah, I understand that this
-project is made up entirely of my own internal engineers and really its just a
-way for us to protect our intellectual property by being first to market and
-(ab)using the open source ecosystem for marketing and hiring advantages".
+Is it too much for me to want to hear, just once, "hey, I'm aware this feature
+is a pet project of mine and really only helps me out".
+
+Or better yet, "yeah, I understand that this project is made up entirely of my
+own internal engineers and really its just a way for us to protect our
+intellectual property by being first to market and (ab)using the open source
+ecosystem for marketing and hiring advantages".
 
 Unfortunately, all too often, vendors pretend like there's nothing to see here;
 move along...
@@ -290,8 +268,9 @@ Well, you might be a vendor if...
 * You cannot articulate why anyone other than your company would want a feature
 * You don't review code outside of your own company
 * You only work on code for a driver to enable your own company's technology
-* You can only provide links to internal documentation that first needs to go
-  through legal review in order for that link to be made public
+* If you provide any documentation links at all, you can only provide links to
+  internal documentation that first needs to go through legal review in order
+  for that link to be made public
 
 "But Jay, 95% of contributors to OpenStack work at some company that pays them
 to write code or work on deployment stuff for OpenStack. Don't shit where you
@@ -305,30 +284,88 @@ participating (or not) in an open source community. Being "a vendor" doesn't
 mean "you work for a company".
 
 I'm afraid to be the bearer of bad news, but Project Mulligan, unlike
-OpenStack, isn't going to cater to the vendors. Project Mulligan won't kick
-vendors out, but at the same time, we're not going to go out of our way to
-deify "Platinum Members" or any such silliness. Vendors are free to take
-Project Mulligan's source code and use it for their own products, but the
-Project Mulligan community won't be spending its time promoting those products.
+OpenStack, isn't going to cater to the vendors.
+
+Project Mulligan won't kick vendors out, but at the same time, we're not going
+to go out of our way to deify "Platinum Members" or any such silliness. Vendors
+are free to take Project Mulligan's source code and use it for their own
+products, but the Project Mulligan community won't be spending its time
+promoting those products, developing "certification" policies for vendors to
+work towards, or attempting to cozy up to vendor-centric trade organizations
+that aren't particularly related to the core mission of Project Mulligan.
 
 Which brings me to something that bothers me about Kubernetes, from a community
 perspective.
 
 Many questions on the Kubernetes user mailing list seem to be for specific
 vendor *products* -- i.e. Google Cloud Platform, Google Kubernetes Engine, Red
-Hat OpenShift [4], etc -- instead of being about Kubernetes itself. This is
+Hat OpenShift [5], etc -- instead of being about Kubernetes itself. This is
 indicative of the tight coupling between the Kubernetes project and the vendors
-that host a Kubernetes SaaS offering.  While there are occasionally questions
-on the OpenStack mailing lists about a particular distribution of OpenStack --
-Mirantis OpenStack/Fuel, Red Hat OpenStack Platform or RDO, etc -- not only are
-these questions rare, but they are often answered with pointers to the vendor's
-support organization or bug tracker. In addition, you don't see questions about
-getting support for one of the public clouds that run OpenStack.
+that host a Kubernetes SaaS offering.
+
+While there are occasionally questions on the OpenStack mailing lists about a
+particular distribution of OpenStack -- Mirantis OpenStack/Fuel, Red Hat
+OpenStack Platform or RDO, etc -- not only are these questions rare, but they
+are often answered with pointers to the vendor's support organization or bug
+tracker. In addition, you don't see questions about getting support for one of
+the public clouds that run OpenStack.
 
 This doesn't seem to be the case for Kubernetes, where the vendored SaaS
 offerings don't seem to be distinguishable from the open source project itself.
 Or at least, they don't seem to be distinguishable for a great number of
-Kubernetes users.
+Kubernetes users. And the engineers working at the primary Kubernetes vendors
+don't seem to have much of a problem with this equating of a product with the
+open source project that underpins those products.
+
+### Releases and time-based release cycles
+
+It seems to me that coordinated releases are merely designed to coincide with
+the OpenStack Summit marketing events. I see no benefit whatsoever to
+time-based release cycles other than for marketing coordination purposes.
+
+The time-based release cycles set artificial deadlines and freeze dates for no
+good reason and just end up placing a bunch of bureaucratic red tape and
+slowing to a crawl a process that frankly should be a simple thing that can be
+done (in a fully automated fashion) whenever necessary.
+
+[OpenStack Swift](https://docs.openstack.org/swift/latest/) has been doing
+[non-time-based releases](https://wiki.openstack.org/wiki/Swift/version_map)
+this way for more than 8 years, eschewing the time-based release mechanics that
+most of the rest of OpenStack projects follow in favor of just tagging their
+source repository with a version tag when they feel that a certain fix or
+feature warrants a new release tag.  And it works perfectly fine for Swift. The
+Swift project's sensible decoupling and reliance on far fewer inter-project
+dependencies makes this possible.
+
+I don't see operators clamouring for a six-month release cycle -- jeez, most
+operators have so much internal integration and legacy junk that they move at
+the speed of molasses with regards to migrating to more modern OpenStack
+releases. All operators care about is can they get from their old-ass version
+to some less old-ass version of their deployed software in a way that doesn't
+result in too much downtime for their users.
+
+I also don't care about long-term support (LTS) releases. If distributions want
+to support those, they should feel free to do so. Many distributions make lots
+of money selling FUD about software that changes too quickly for their legacy
+customers to "handle in the way they've become accustomed". So, it seems fair
+to me to have those vendors fully own their own LTS release processes and spend
+the money to maintain that code. I personally don't feel it should be something
+an upstream development community should be involved in.
+
+Therefore, Project Mulligan won't be following a time-based release cycle.
+There will be no "spec freeze dates", no "code freeze dates", no "dependent
+library freezes", no "milestone releases". None of that.
+
+When a feature or set of bug fixes warrants a "release", then the source
+repository will get a new tag which will trigger the automated build of release
+artifacts. No red tape, no freeze dates.
+
+Who gets to decide what "warrants a release"? Anyone should be able to propose
+that the source repository be tagged for release. If there are no objections
+from anyone in the contributor community, one of the core committers can
+trigger the release by pushing a tag. Simple is that.
+
+### Conferences
 
 ### Communication
 
@@ -383,7 +420,11 @@ Despite this, many people, even people knowledgeable of OpenStack governance
 internals, continue to equate the overly broad mission of OpenStack (which,
 again, has barely changed since 2012) with the "Big Tent" initiative.
 
-[3] OpenStack (as a whole as well as individual OpenStack projects) has
+[3] A Linus Torvalds without a personal attack mode, that is. It is entirely
+possible for one person to be both anti-bullshit as well as not act like a bag
+of dicks at the same time.
+
+[4] OpenStack (as a whole as well as individual OpenStack projects) has
 suffered greatly from the inability of the maintainer community to say "no" (or
 even "fuck no").
 
@@ -397,7 +438,7 @@ required reading for any contributor submitting a feature request and any
 maintainer looking for ways to not crush tender contributor feelings on a
 feature request (if that's the sort of thing that keeps you up at night).
 
-[4] The *current* incarnation of OpenShift as of July 2018. They keep changing
+[5] The *current* incarnation of OpenShift as of July 2018. They keep changing
 the damn thing's purpose, rewriting it in different languages, and gradually
 updating the websit that you never quite know what http://openshift.com will
 lead to in any given month.
