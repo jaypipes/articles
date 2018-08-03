@@ -365,7 +365,78 @@ that the source repository be tagged for release. If there are no objections
 from anyone in the contributor community, one of the core committers can
 trigger the release by pushing a tag. Simple is that.
 
-### Conferences
+### Conferences and foundations
+
+There are plenty people who like the large OpenStack Summit conferences.
+
+I am not one of those people.
+
+I have not attended the last two OpenStack summits; instead I've chosen to
+stick to the OpenStack Project Team Gathering events that are strictly for
+developers to discuss implementation proposals and brainstorm system design.
+
+Perhaps this is because I remember the very first OpenStack Design Summit in
+Austin, Texas. There were about 150 engineers there, if I recall correctly. We
+discussed implementation possibilities, design choices, how to test Python
+software properly, how to set up an automated testing infrastructure system,
+and how to organize developers who were just beginning to come together around
+infrastructure software.
+
+That first get-together, and the developer events that followed for the next
+couple years or so (until the OpenStack Foundation became a thing), were
+modeled after the successful Ubuntu Design Summit (UDS) concept where
+contributors to the Ubuntu Linux distribution would get together every six
+months to decide what would be the focus of the next release, what were the
+implementation proposals for various system pieces, and what decisions needed
+to be made to further the distribution.
+
+The entire **purpose** of the original design summits was to be a **working
+event**. There were no presentations, no vendor displays, no sales people
+mixing with engineers. It was an event **designed to get actual work done**.
+
+The need for OpenStack to become ubiquitous in the cloud world, however, meant
+that those halcyon days of productive, technical meetings slowly evolved into a
+more traditional IT conference, with keynotes, big-money sponsors, lots of
+marketing and sales people, along with the inevitable buzzword-ification of the
+whole affair.
+
+Now, if you look at the session schedules for the OpenStack summits, all you
+see is buzzword soup, with never-ending mentions of "hyperscale",
+"hyper-converged infrastructure", "edge", "NFV", "carrier-grade", "containers",
+"MEC", etc.
+
+This obsession with following and promoting the hype of the day has led to a
+ludicrous lineup of vendor-driven sessions that tend to drive people who are
+looking for solid technical content screaming for the hills.
+
+Here's a smattering of sessions from the most recent OpenStack Summit in
+Vancouver that are perfect examples of the type of artisanal, farm-to-table
+buzzword vendor bullshit that has pervaded these events.
+
+* [Open HPE Telco NFV-Infrastructure platforms with Red Hat OpenStack](https://www.openstack.org/summit/vancouver-2018/summit-schedule/events/21815/open-hpe-telco-nfv-infrastructure-platforms-with-red-hat-openstack)
+* [Unlock bigdata analytic efficiency with Ceph data lake](https://www.openstack.org/summit/vancouver-2018/summit-schedule/events/20683/unlock-bigdata-analytic-efficiency-with-ceph-data-lake)
+* [Cisco Container Platform - An Enterprise Kubernetes Platform for the Multicloud World](https://www.openstack.org/summit/vancouver-2018/summit-schedule/events/21872/cisco-container-platform-an-enterprise-kubernetes-platform-for-the-multicloud-world)
+* [Closing the Loop: VNF end-to-end Failure Detection and Auto Healing](https://www.openstack.org/summit/vancouver-2018/summit-schedule/events/20839/closing-the-loop-vnf-end-to-end-failure-detection-and-auto-healing)
+* [Moving to the Edge with NFV](https://www.openstack.org/summit/vancouver-2018/summit-schedule/events/21870/moving-to-the-edge-with-nfv)
+* [Supporting Highly Transactional and Low Latency Workloads on Ceph](https://www.openstack.org/summit/vancouver-2018/summit-schedule/events/21370/supporting-highly-transactional-and-low-latency-workloads-on-ceph)
+
+That last one is basically just an advertisement for Intel storage technology.
+
+And then there are [the sessions](https://www.openstack.org/summit/vancouver-2018/summit-schedule/events/21275/akraino-edge-stack-an-openstack-and-linux-foundation-joint-blueprint-on-edge-computing)
+([keynotes](https://www.openstack.org/summit/vancouver-2018/summit-schedule/events/21885/keynote-akraino-sponsored-keynote) even!) that are devoted to completely non-existent vaporware -- such as
+[Akraino](https://www.akraino.org/) -- because the companies behind the
+vaporware idea (in the case of Akraino, that would be AT&T and, yes again,
+Intel) are a powerful vendor lobby inside the OpenStack Foundation since they
+are [platinum foundation members](https://www.openstack.org/foundation/companies/).
+
+These companies have successfully played the OpenStack Foundation and the Linux
+Foundation against each other to see which foundation will buy into their
+particular flavor of vaporware du jour. Intel and subsidiary Windriver Systems
+did this with the [StarlingX project](http://www.starlingx.io/) as well.
+
+This kind of bullshit is the reason that Project Mulligan won't have a
+foundation, won't have marketing conferences, and won't be trying to needlessly
+curry favor with industry groups and vendor-driven organizations.
 
 ### Communication
 
@@ -377,8 +448,8 @@ trigger the release by pushing a tag. Simple is that.
 
 #### Focus on maintainerism over stat padders
 
-I don't give a shit how many stars a github repo has. Likewise, I don't give a
-shit how many "+1" or "lgtm" code reviews a contributor has done.
+I don't give a rat's ass how many stars a github repo has. Likewise, I don't
+give a shit how many "+1" or "lgtm" code reviews a contributor has done.
 
 ### Rewiring the mindset
 
@@ -391,7 +462,8 @@ shit how many "+1" or "lgtm" code reviews a contributor has done.
 Are you now craving more fast and loose opinions on how OpenStack lost its way
 with its mission? Well, then, proceed apace to [part
 two](mulligan-architecture.md) for some tasty blather about blowing up the
-OpenStack technology and system architecture.
+OpenStack technology and system architecture and starting over in Project
+Mulligan.
 
 ## Footnotes
 
