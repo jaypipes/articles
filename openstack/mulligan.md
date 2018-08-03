@@ -1,4 +1,4 @@
-Jess Frazelle's [tweet](https://twitter.com/jessfraz/status/1023550446026276864) this morning got me thinking. [1]
+Jess Frazelle's [tweet](https://twitter.com/jessfraz/status/1023550446026276864) recently got me thinking. [1]
 
 ![Jess Frazelle's original tweet](images/jesstweet.png "Jess Frazelle's original tweet that got me thinking")
 
@@ -9,13 +9,13 @@ big do-over?
 In this two-part blog post, I will be describing "Project Mulligan", the
 OpenStack Redo.
 
-This first post is all about **community**, **governance**, **release cycle**,
-**mission** and **scope**.
+This first post is about **mission**, **scope**, **community**, and
+**governance**.
 
 The [second part](mulligan-architecture.md) is all about the **architecture**
 and **technology choices** that Project Mulligan will employ.
 
-This is obviously a highly opinionated reflection on what I personally would
+This is obviously a highly opinionated reflection on what I **personally** would
 change about the world I've lived in for nearly a decade.
 
 I'm bound to offend lots of people along the way in both the OpenStack and
@@ -40,8 +40,172 @@ listened to lots of talks at conferences, and met a whole bunch of really smart
 and talented individuals in my time in the community.
 
 All this to say that I feel I do have the required background and knowledge to
-at least put forth a coherent vision for Project Mulligan and that I am as much
-responsible as anyone else for the mess that OpenStack has become.
+at least put forth a coherent vision for Project Mulligan and that *I am as much
+responsible as anyone else for the mess that OpenStack has become*.
+
+## Redoing the mission
+
+When OpenStack began, we dreamt big. The mission of OpenStack was big, bold and
+screamed of self-confidence. We wanted to create **an open source cloud
+operating system**.
+
+The #1 goal in those days was expansion. Specifically, expansion of **user
+footprint** and **industry mindshare**. It was all about quantity versus
+quality. Get as much of the pie as possible.
+
+As time rolled on, the mission got wordier, but remained as massive and vague
+as "cloud operating system" ever was. In 2013, the mission looked like this:
+
+> to produce the ubiquitous Open Source Cloud Computing platform that will meet the needs of public and private clouds regardless of size, by being simple to implement and massively scalable.
+
+See the word "ubiquitous" in there? That pretty much sums up what OpenStack's
+mission has been since the beginning: *get installed in as many places as
+possible*.
+
+While "simple to implement" and "massively scalable" were aspirational, neither
+were realistic and both were subject to interpretation (though I think it is
+safe to say OpenStack has never been "simple to implement").
+
+Today, the mission continues to be ludicrously broad, vague, and open-ended, to
+the point that it's impossible to tell what OpenStack ***is*** by reading the
+mission:
+
+> to produce a ubiquitous Open Source Cloud Computing platform that is easy to use, simple to implement, interoperable between deployments, works well at all scales, and meets the needs of users and operators of both public and private clouds.
+
+"Meets the needs of users and operators of both public and private clouds" is
+about as immeasurable of a thing as I can think of. Again, it's aspirational,
+but so broad as to be meaningless outside anything but the most abstract
+discussions.
+
+Project Mulligan is getting a new mission in life:
+
+> demystify the process of provisioning compute infrastructure
+
+It's aspirational but not open-ended; singularly focused on the compute
+provisioning process.
+
+Why "demystify"?
+
+Despite "easy to use" and "simple to implement" being in OpenStack's current
+mission, I believe OpenStack v1 has utterly failed to simplify a complex and
+often burdensome process. In contrast, OpenStack v1 has made a complex process
+(of provisioning infrastructure pieces) *even more convoluted and error-prone*.
+
+If you ask me *why* I think OpenStack v1 has failed to deliver on these aspects
+of its mission, my response is that OpenStack v1 doesn't know what it wants to
+be.
+
+It has no identity other than being open and welcoming to anyone and everyone
+that wants to jump on the Great Cloud Bandwagon in the Sky. [2]
+
+And because of this identity crisis, there is zero focus on any one particaular
+thing.
+
+Well, that ends with Project Mulligan.
+
+Project Mulligan isn't trying to be a "cloud operating system". Heck, it
+doesn't even care what "cloud" *is*. Or isn't.  Or might be in the future for a
+DevOpsSysAdminUserator.
+
+"OK, Jay, but what really *IS* 'compute infrastructure'?"
+
+I'm glad you asked, because that's a perfect segue into a discussion about the
+scope of Project Mulligan.
+
+## Redoing the scope
+
+Defining the scope of OpenStack is like attempting to bathe a mud-soaked cat in
+a bubble bath -- a slippery affair that only ends up getting the bather muddy
+and angering the cat.
+
+The scope of OpenStack escapes definition due to the sheer expanse of
+OpenStack's mission.
+
+Now that we've slashed Project Mulligan's mission like Freddy Krueger on
+holiday in a paper factory, defining the scope of Project Mulligan is a much
+easier task.
+
+We're going to start with a relatively tiny scope (compared to OpenStack v1's),
+and if the demand is there, we'll expand it later. Maybe. If I'm offered enough
+chocolate chip cookies.
+
+The scope of Project Mulligan is:
+
+> singular baremetal and virtual machine resource provisioning
+
+I've chosen each word in the above scope carefully.
+
+> singular
+
+"singular" was chosen to make it clear that Project Mulligan doesn't attempt to
+provision multiple identical things in the same operation.
+
+> baremetal and virtual machine
+
+"baremetal and virtual machine" was selected to disambiguate Project Mulligan's
+target deployment unit. It's not containers. It's not applications. It's not
+lambda functions. It's not unikernels or ACIs or OCIs or OVFs or debs or RPMs
+or Helm Charts or any other type of package.
+
+Project Mulligan's target deployment unit is a **machine** -- either baremetal
+or virtual.
+
+A machine is what is required to run some code on. Containers, cgroups,
+namespaces, applications, packages, and yes, serverless/lambda functions
+require a machine to run on. That's what Project Mulligan targets: the machine.
+
+> resource
+
+The word "resource" was used for good reason: a resource is something that is
+used or consumed by some other system. How those systems describe, request,
+claim and ultimately consume resources is such a core concept in any software
+system that extreme care must be taken to ensure that the mechanics of resource
+management are done *right*, and done in a way that doesn't hinder the creation
+of higher-level systems and platforms that utilize resource and usage
+information (like quota management and reservation systems, for example).
+
+I go into a lot of detail below in the second part of this blog post on
+"Redoing the architecture" about resource management and why it's important to
+be part of Project Mulligan.
+
+> provisioning
+
+At its core, the purpose of Project Mulligan is to demystify the arcane and
+hideously complex process inherent in provisioning machines. Provisioning
+involves the setup and activation of the machine. It does not involve
+operational support of the machine, nor does it involve moving the machine,
+restarting it, pausing it, or throwing it a birthday party.
+
+The *only* things that are important to be in Project Mulligan's scope are the
+items that enable its mission and that cannot be fulfilled by other existing
+libraries or systems in a coherent way.
+
+From an interface perspective, this means the scope of Project Mulligan is the
+following:
+
+* Disovering and managing hardware inventory (these are the resources that
+  will be provided to consumers of Project Mulligan's APIs)
+* Requesting, claiming and ultimately consuming those machine resources
+
+That's pretty much it.
+
+I imagine at this point, I've offended more than three quarters of the universe
+by not including in Project Mulligan's scope any of the following:
+
+* Object storage
+* Network provisioning and management
+* Containers
+* Security
+* Orchestration
+* Filesystems
+* Deployment automation
+* Configuration management
+* AmigaOS
+
+Are these things important? Yep. Well, OK, maybe not AmigaOS. Do I want them in
+Project Mulligan's mission statement or scope? No. No, I don't.
+
+![Sorry, not sorry](images/sorry-not-sorry-qraqsq-300.jpg "Scope of sorry.")
 
 ## Redoing the community
 
@@ -69,6 +233,13 @@ tape over the years, most notably in the following areas:
 
 #### Release cycles
 
+Coordinated releases are a pain in the ass, and not something I feel is
+terribly important if there were less tight coupling of components.
+
+Don't care about long-term support (LTS) releases. If distributions want to
+support those, go for it. I personally don't feel it should be something an
+upstream development community should be involved in.
+
 #### Death by spec
 
 #### Conferences
@@ -82,7 +253,7 @@ However, I'm tired of talking. I want to see some action taken that really
 kicks Project Mulligan into high gear.
 
 We need a Linus Torvalds for Project Mulligan. A no-bullshit, this is how it's
-gonna be, type of person who is willing to say "oh fuck no" when needed. [2]
+gonna be, type of person who is willing to say "oh fuck no" when needed. [3]
 
 Hell, let's have three of these not-necessarily-benevolent dictators. That way
 they can share the grief and bear the brunt of inevitable criticism that will
@@ -145,7 +316,7 @@ perspective.
 
 Many questions on the Kubernetes user mailing list seem to be for specific
 vendor *products* -- i.e. Google Cloud Platform, Google Kubernetes Engine, Red
-Hat OpenShift [3], etc -- instead of being about Kubernetes itself. This is
+Hat OpenShift [4], etc -- instead of being about Kubernetes itself. This is
 indicative of the tight coupling between the Kubernetes project and the vendors
 that host a Kubernetes SaaS offering.  While there are occasionally questions
 on the OpenStack mailing lists about a particular distribution of OpenStack --
@@ -178,149 +349,6 @@ shit how many "+1" or "lgtm" code reviews a contributor has done.
 
 #### On fanboi-ism
 
-## Redoing the mission
-
-When OpenStack began, we dreamt big. The mission of OpenStack was big, bold and
-screamed of self-confidence. We wanted to create **an open source cloud
-operating system**.
-
-The #1 goal in those days was expansion. Specifically, expansion of **user
-footprint** and **industry mindshare**. It was all about quantity versus
-quality. Get as much of the pie as possible.
-
-As time rolled on, the mission got wordier, but remained as massive and vague
-as "cloud operating system" ever was. In 2013, the mission looked like this:
-
-> to produce the ubiquitous Open Source Cloud Computing platform that will meet the needs of public and private clouds regardless of size, by being simple to implement and massively scalable.
-
-See the word "ubiquitous" in there? That pretty much sums up what OpenStack's
-mission has been since the beginning: get installed in as many places as
-possible.
-
-While "simple to implement" and "massively scalable" were aspirational, neither
-were realistic and both were subject to interpretation (though I think it's
-safe to say OpenStack has never been "simple to implement").
-
-Today, the mission continues to be ludicrously broad, vague, and open-ended, to
-the point that it's pretty much impossible to tell what OpenStack ***is*** by
-reading the mission:
-
-> to produce a ubiquitous Open Source Cloud Computing platform that is easy to use, simple to implement, interoperable between deployments, works well at all scales, and meets the needs of users and operators of both public and private clouds.
-
-"Meets the needs of users and operators of both public and private clouds" is
-about as immeasurable of a thing as I can think of. Again, it's aspirational,
-but so broad as to be meaningless outside of any abstract discussion.
-
-One thing I've learned in my work life over the last twenty years is that if
-I try and do too many things at once, I end up doing a shit job at all of
-them.
-
-Instead, I've found that focusing on a single thing allows me to refine my
-effort into something with clear purpose and clean design.
-
-Project Mulligan is getting a new mission in life; one that is purpose-driven
-(though not like that Christian cult book crap).
-
-The mission of Project Mulligan is to:
-
-> demystify the process of provisioning compute infrastructure
-
-It's aspirational but not open-ended; singularly focused on the compute
-provisioning process.
-
-Project Mulligan isn't trying to be a "cloud operating system". Heck, it
-doesn't even care what "cloud" *is*. Or isn't.  Or might be in the future for a
-DevOpsSysAdminUserator.
-
-"OK, Jay, but what really *IS* 'compute infrastructure'?"
-
-I'm glad you asked, because that's a perfect segue into a discussion about the
-scope of Project Mulligan.
-
-## Redoing the scope
-
-Defining the scope of OpenStack is like attempting to bathe a mud-soaked cat in
-a bubble bath -- a slippery affair that only ends up getting the bather muddy
-and angering the cat.
-
-The scope of OpenStack escapes definition due to the sheer expanse of
-OpenStack's mission.
-
-Now that we've slashed Project Mulligan's mission like Freddy Krueger on
-holiday in a paper factory, defining the scope of Project Mulligan is a much
-easier task.
-
-We're going to start with a relatively tiny scope (compared to OpenStack v1's),
-and if the demand is there, we'll expand it later. Maybe. If I'm offered enough
-chocolate chip cookies.
-
-The scope of Project Mulligan is:
-
-> singular baremetal and virtual machine resource provisioning
-
-I've chosen each word in the above scope carefully.
-
-> singular
-
-"singular" was chosen to make it clear that Project Mulligan doesn't attempt to
-provision multiple identical things in the same operation.
-
-> baremetal and virtual machine
-
-"baremetal and virtual machine" was selected to disambiguate Project Mulligan's
-target deployment unit. It's not containers. It's not applications. It's not
-lambda functions. It's not unikernels or ACIs or OCIs or OVFs or debs or RPMs
-or Helm Charts or any other type of package.
-
-Project Mulligan's target deployment unit is a **machine** -- either baremetal
-or virtual.
-
-A machine is what is required to run some code on. Containers, cgroups,
-namespaces, applications, packages, and yes, serverless/lambda functions
-require a machine to run on. That's what Project Mulligan targets: the machine.
-
-> resource
-
-The word "resource" was used for good reason: a resource is something that is
-used or consumed by some other system. How those systems describe, request,
-claim and ultimately consume resources is such a core concept in any software
-system that extreme care must taken to ensure that the mechanics of resource
-management are done *right*, and done in a way that doesn't hinder the creation
-of higher-level systems and platforms that utilize resource and usage
-information.
-
-I go into a lot of detail below in the section on "Redoing the architecture"
-about resource management and why it's important to be part of Project
-Mulligan.
-
-> provisioning
-
-At its core, the purpose of Project Mulligan is to demystify the arcane and
-hideously complex process inherent in provisioning machines. Provisioning
-involves the setup and activation of the machine. It does not involve
-operational support of the machine, nor does it involve moving the machine,
-powering it down, restarting it, pausing it, or throwing it a birthday party.
-
-The *only* things that are important to be in Project Mulligan's scope are the
-items that enable its mission and that cannot be fulfilled by other existing
-libraries or systems in a coherent way.
-
-I imagine at this point, I've offended more than three quarters of the universe
-by not including in Project Mulligan's scope any of the following:
-
-* Storage
-* Networking
-* Containers
-* Security
-* Orchestration
-* Filesystems
-* Deployment
-* Configuration management
-* AmigaOS
-
-Are these things important? Yep. Well, OK, maybe not AmigaOS. Do I want them in
-Project Mulligan's mission statement or scope? No. No, I don't.
-
 ## On to the architecture and technology fun
 
 Are you now craving more fast and loose opinions on how OpenStack lost its way
@@ -336,7 +364,26 @@ that some negative aspects of the OpenStack ecosystem and approach have snuck
 into Kubernetes. Still, I think it's an interesting question to ponder,
 regardless.
 
-[2] OpenStack (as a whole as well as individual OpenStack projects) has
+[2] Numerous folks have pointed to the "[Big
+Tent](http://inaugust.com/posts/big-tent.html)" initiative from 2014-2015 as
+being the reason that OpenStack "lost its focus". I've repeatedly called
+bullshit on this assertion, and will again do so here. The Big Tent initiative
+**did not redefine OpenStack's mission**. It was a restructuring of how the
+OpenStack Technical Committee evaluated **new project applicants** to the
+OpenStack ecosystem.
+
+This is why the Big Tent was officially called "[Project Structure
+Reform](https://governance.openstack.org/tc/resolutions/20141202-project-structure-reform-spec.html)".
+
+It changed governance procedures so that there was no more "Supreme Court of
+OpenStack" that had to be groveled to each time a new project came around. It
+absolutely did *not* broaden what OpenStack's scope or mission was.
+
+Despite this, many people, even people knowledgeable of OpenStack governance
+internals, continue to equate the overly broad mission of OpenStack (which,
+again, has barely changed since 2012) with the "Big Tent" initiative.
+
+[3] OpenStack (as a whole as well as individual OpenStack projects) has
 suffered greatly from the inability of the maintainer community to say "no" (or
 even "fuck no").
 
@@ -350,7 +397,7 @@ required reading for any contributor submitting a feature request and any
 maintainer looking for ways to not crush tender contributor feelings on a
 feature request (if that's the sort of thing that keeps you up at night).
 
-[3] The *current* incarnation of OpenShift as of July 2018. They keep changing
+[4] The *current* incarnation of OpenShift as of July 2018. They keep changing
 the damn thing's purpose, rewriting it in different languages, and gradually
 updating the websit that you never quite know what http://openshift.com will
 lead to in any given month.
