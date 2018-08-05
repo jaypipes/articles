@@ -44,8 +44,8 @@ OpenStack and Project Mulligan:
 * **extensibility**: the degree to which a project enables being used in ways
   that the project was not originally intended
 
-Before getting to what I'd like to see in Project Mulligan's architecture,
-let's first discuss the architecture of OpenStack v1.
+Before getting to Project Mulligan's architecture, let's first discuss the
+architecture of OpenStack v1.
 
 ### OpenStack's architecture
 
@@ -74,7 +74,7 @@ From a technology dependency point of view, Swift has very few.
 
 There's no message queue. Instead, the (minimal) communication between certain
 Swift internal service daemons is done via HTTP calls, and most Swift service
-daemons push incoming work requests on internal simple in-memory queues for
+daemons push incoming work requests on to internal simple in-memory queues for
 processing.
 
 There is no centralized database either. Swift replicates SQLite database files
@@ -213,7 +213,7 @@ making. We no longer allow this kind of madness. Neutron is the only supported
 networking driver at this time. Same for volume management. Cinder is the one
 and only supported volume manager.
 
-### Project Mulligan's architecture
+## OK, so what does Project Mulligan look like?
 
 For Project Mulligan, we'll be throwing out pretty much everything and starting
 over. So, out with the chaos and inconsistency. In with sensibility, simplicity
@@ -222,7 +222,44 @@ and far fewer plug and extension points.
 Now that Project Mulligan's scope has been healthily trimmed, we can focus on
 only the components and requirements for a simple machine provisioning system.
 
-Screw extensibility. Seriously, screw it.
+Project Mulligan will be composed of a number of components with well-defined
+scopes:
+
+* A **smart client** (`mulligan-client`) that can itself communicate with all
+  Mulligan service daemons without needing to go through any central API or
+  proxy service
+* An **account service** (`mulligan-iam`) providing identity and account
+  management functionality
+* A **metadata service** (`mulligan-meta`) provides lookup and translation
+  service for common object names, tags and key/value items
+* An **inventory management service** (`mulligan-resource`) is responsible for
+  tracking the resources discovered in an environment and providing a simple
+  placement and reservation engine
+* A **control service** (`mulligan-control`) that can take an incoming request
+  to provision or decommission a machine and send a work request to a task
+  queue
+* **executors** (`mulligan-executor`) will read task requests from a queue and
+  performing that task, such as booting a machine or configuring a machine's
+  networking
+
+What about the technologies that Project Mulligan will be dependent upon?
+
+I'm envisioning the following dependencies:
+
+* [etcd](https://github.com/coreos/etcd) for storing various pieces of information and being the
+  notification/watch engine for all services in Project Mulligan.
+* A relational database server for storing highly relational data that needs to
+  be efficiently queried in aggregate
+* [NATS](https://www.nats.io/) for a simple task based queue service that the
+  executors will pop tasks from
+
+From a birdseye view, the topology of Project Mulligan and its components and
+dependent low-level services looks like this:
+
+![Project Mulligan component layout](images/mulligan-overview.png "A bird's eye view of Project Mulligan")
+
+All Project Mulligan services and workers will be entirely stateless. All state
+will be persisted to either `etcd` or a RDBMS.
 
 ## Redoing the API
 
@@ -230,24 +267,11 @@ A project's API is its primary user interface. As such, its API is critically
 important to both the success of the project as well as the project's perceived
 quality and ease of use.
 
-If I could change OpenStack's API, what would I change for Project Mulligan?
+There is no REST API in Project Mulligan. Only gRPC APIs are supported.
 
-### OpenStack's API
-
-OpenStack has no coherent API. Period.
-
-Each OpenStack project has its own REST API, with the valiant API working group
-trying (in vain) to keep an eye out for consistency and issuing guidelines for
-projects to (fail to) use.
-
-The gripes I have with the various project REST APIs are virtually endless, so
-I'll just stick with a few major grievances here before talking up the wonders
-that Project Mulligan will bring to bear on the world of APIs.
-
-### Project Mulligan's API
-
-gRPC only. Versioned from the get-go with a sane set of clear rules for
-describing the evolution of the request and response payloads.
+The reason for this choice is that gRPC is versioned from the get-go with a
+sane set of clear rules for describing the evolution of the request and
+response payloads.
 
 No more inane and endless debates about "proper" REST-ness or HATEOS or which
 HTTP code thought up in the 1990s is more appropriate for describing a
@@ -256,9 +280,124 @@ particular application failure.
 No more trying to shoehorn a control plane API into a data plane API or vice
 versa.
 
+Astute readers will note that there is no top-level API or proxy server in
+Project Mulligan.
+
+However, this doesn't mean that there isn't a Project Mulligan public API. The
+Project Mulligan API is simply the set of gRPC API methods exposed by Project
+Mulligan's gRPC service components. What is *not* part of Project Mulligan's
+public API are the internal task payload formats that get sent from the
+`mulligan-control` service to the NATS queue(s) for eventual processing by a
+`mulligan-executor` worker.
+
+The key to making this work is developing a smart client program that contains
+much of the catalog, service mesh and route-dispatching functionality that a
+traditional top-level API or proxy server would contain.
+
+The problem with embedding a lot of logic into client programs, though, is that
+you need to duplicate that logic for each programming language binding you
+create. I recognize this is an issue. To address it, Project Mulligan will
+automatically generate this core routing logic code and generate smart clients
+in a variety of programming languages as part of its automated build process.
+
+Call me crazy, I know... but gRPC, in combination with Google Protocol Buffers'
+`protoc` compiler does this exact thing: it generates a client and server
+binding for whatever programming language you want after looking at the
+`.proto` files that describe an interface.
+
+### What about extensibility?
+
+I'm not interested in having Project Mulligan become a generic framework for
+constructing cloud applications. I'm not interested in allowing Project
+Mulligan's scope and purpose to be extended or redefined by adding API
+abstraction machinery ala Kubernetes custom resource definitions (CRDs) to
+Project Mulligan.
+
+Project Mulligan is what it is: a simple machine provisioning system. It's not
+designed to be extensible. It should do one thing and do that thing cleanly,
+simply and efficiently.
+
+If you want a framework for creating something that isn't machine provisioning,
+feel free to go use Kubernetes' CRDs. Note that you'll still need Kubernetes to
+be installed on some machines somewhere. After all, code needs to run on a
+machine. And Project Mulligan is all about demystifying that process of
+provisioning machines.
+
+## Important things to get right, from the beginning
+
+Here are a few things that I think need to be done correctly, right from the
+start of Project Mulligan.
+
+* Installation and configuration
+* In-place updates and re-configuration
+* Multi-tenancy and isolation
+* Partitioning and failure domains
+
+### Install and configuration
+
+Project Mulligan will be able to be installed via traditional software package
+managers like apt or yum on Linux.
+
+In addition to traditional software packages, we'll build Docker images for the
+various service components.
+
+If an organization has already deployed a container orchestration system like
+Kubernetes and wants to deploy Project Mulligan in a highly-available manner,
+they can consume these Docker images and build their own Helm charts for
+deploying Project Mulligan.
+
+Configuration of Project Mulligan should be as easy as possible. There should
+be no need for hundreds of configuration options and a simple bootstrapping
+command from the `mulligan-client` should be enough to get a working system up
+and running.
+
+### In-place updates and re-configuration
+
+Project Mulligan's components should be able to be updated in-place and
+separately from each other, with no ordering dependencies.
+
+Each component should respond to a SIGTERM with a graceful shutdown of the
+process, draining any queued work properly.
+
+When the component's package is upgraded and the component restarted, the gRPC
+server contained within the component will likely contain a newer version of
+gRPC API request payloads. Because of the [way gRPC method versioning works](https://www.beautifulcode.co/backward-and-forward-compatibility-protobuf-versioning-serialization),
+other components (or the smart clients) that communicate with the component
+will continue to be sending request payloads formatted for an older version of
+the component's API method. The upgraded server component will respond to the
+older clients with the message format the older client expects. This will
+facilitate Project Mulligan's components being upgraded without any ordering
+dependency.
+
+I *really* like OpenStack Swift's approach to upgrades. There are no separate
+administrative commands for performing database schema migrations. No separate
+utility for performing data migrations. Everything is simply handled within the
+controllers themselves, with the controllers [executing SQL commands](https://github.com/openstack/swift/blob/86d78f6667392b2ee0ca017da8f54ff153aca491/swift/container/backend.py#L1532-L1572) to migrate
+the schema forward as needed.
+
+Much more operator-friendly than having a separate `nova-manage db sync &&
+nova-manage api_db sync && nova-manage db online_data_migrations --max-count=X`
+way of performing simple forward-only schema and data migrations.
+
+Re-configuring a running Project Mulligan component should be possible in order
+to tinker with runtime settings like log output verbosity. In order to
+facilitate this runtime re-configuration, each Project Mulligan service
+component will have a gRPC API method called `$ServiceConfigure()` that accepts
+a set of configuration options that are tunable at runtime.
+
+### Multi-tenancy and isolation
+
+### Partitioning and failure domains
+
+Project Mulligan should have clear and concise definitions of the ways in which
+the system itself may be divided -- both for reasons of scale as well as for
+limiting a failure's effects.
+
 ## Conclusion
 
-
+In case it hasn't become obvious by now, Project Mulligan isn't OpenStack v2.
+It's a complete change of direction, an entirely trimmed and reworked vision of
+a very small chunk of what today's OpenStack services are.
 
 ## Footnotes
 
