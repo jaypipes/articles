@@ -434,28 +434,30 @@ Foundation against each other to see which foundation will buy into their
 particular flavor of vaporware du jour. Intel and subsidiary Windriver Systems
 did this with the [StarlingX project](http://www.starlingx.io/) as well.
 
-This kind of bullshit is the reason that Project Mulligan won't have a
-foundation, won't have marketing conferences, and won't be trying to needlessly
-curry favor with industry groups and vendor-driven organizations.
+This kind of vendor-driven political bullshit is the reason that Project
+Mulligan will be quite different when it comes to community management.
 
-### Communication
+Project Mulligan won't have a foundation, sorry. I personally like quite a few
+of the employees at the OpenStack Foundation. I even (mostly) support recent
+transition to becoming the Open Infrastructure Foundation. That said, I can't
+stand the hype machining that the foundation encourages along with the Linux
+Foundation and its Cloud Native Computing Foundation (CNCF) offshoot and OPNFV
+project. [6]
 
-#### Slack and IRC
+Nor will Project Mulligan have marketing conferences. For get-togethers, there
+will be a return to the original design summit idea, crossed with a "hack days"
+type of flavor. We'll call them "Design Days".
 
-#### Gerrit, Github, and code flows
+All developers as well as operators of Project Mulligan will be welcome at
+these design days. Developers of Project Mulligan means anyone who has
+committed code *or* anyone who wants to contribute code to Project Mulligan and
+learn about it.
 
-#### Mailing lists, Slack and Google Docs
-
-#### Focus on maintainerism over stat padders
-
-I don't give a rat's ass how many stars a github repo has. Likewise, I don't
-give a shit how many "+1" or "lgtm" code reviews a contributor has done.
-
-### Rewiring the mindset
-
-#### On programming language choice
-
-#### On fanboi-ism
+The events will be self-funded and bootstrap-organized, likely at university
+venues that donate space over a long weekend. I used to organize these types of
+events in the MySQL community and they were very successful in bringing
+community contributors in the ecosystem together for a fun and productive few
+days.
 
 ## On to the architecture and technology fun
 
@@ -467,10 +469,10 @@ Mulligan.
 
 ## Footnotes
 
-[1] Yes, I'm aware Jess Frazelle wasn't actually asking the OpenStack community
-what the next version of OpenStack would look like. Rather, she was opining
-that some negative aspects of the OpenStack ecosystem and approach have snuck
-into Kubernetes. Still, I think it's an interesting question to ponder,
+[1] Yes, I'm fully aware Jess Frazelle wasn't actually asking the OpenStack
+community what the next version of OpenStack would look like. Rather, she was
+opining that some negative aspects of the OpenStack ecosystem and approach have
+snuck into Kubernetes. Still, I think it's an interesting question to ponder,
 regardless.
 
 [2] Numerous folks have pointed to the "[Big
@@ -514,3 +516,18 @@ feature request (if that's the sort of thing that keeps you up at night).
 the damn thing's purpose, rewriting it in different languages, and gradually
 updating the websit that you never quite know what http://openshift.com will
 lead to in any given month.
+
+[6] My prediction is that eventually the Linux Foundation will end up subsuming
+the OpenStack (neé Open Infrastructure) Foundation and turning it into one of
+its projects like OPNFV. At which point, there will be a huge backlash from the
+CNCF folks who despise all things OpenStack that they consider to be
+vendor-driven, legacy (in CNCF world, legacy == The World Before Docker, so
+anything before 2013.) and over-architected while forgetting that many of the
+same people and companies that initially developed those over-architected
+OpenStack solutions are now, *gasp!*, working on CNCF projects. At which point
+the Apache Foundation will put out an announcement saying how they could
+see all of this coming years ago. And we'll all have a big come to Jesus (come
+to Jess?) moment and realize that, holy shit, we're all actually working on the
+same kinds of problems and mostly we've just been letting our biases about
+programming languages, SQL vs. NoSQL, and Slack vs. IRC drive wedges in between
+what should be fairly rock-solid relationships.
