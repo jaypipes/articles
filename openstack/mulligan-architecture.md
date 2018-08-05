@@ -6,6 +6,30 @@ with a theoretical reboot of the project.
 In this part, I'll be discussing what I'd change about the **architecture**, **APIs** and
 **technology choices** of OpenStack in the new world of Project Mulligan.
 
+## A word on programming language
+
+For those of you frothing like hyenas waiting to get into a religious battle
+over programming languages, you will need to put your tongues back into your
+skulls. I'm afraid you're going to be supremely disappointed by this post,
+since I quite deliberately did not want to get into a Golang vs. Python vs.
+Rust vs. Brainfuck debate.
+
+Might as well get used to that feeling of disappointment now before going
+further. Or, whatever, just stop reading if that's what you were hoping for.
+
+For the record, shitty software can be written in any programming language.
+Likewise, excellent software can be written in most programming languages. I
+personally have a love/hate relationship with all three programming languages
+that I code with on a weekly basis (Python, Golang, C++).
+
+Regardless of which programming language might be chosen for Project Mulligan,
+I doubt this love/hate relationship would change. At the end of the day, what
+is most important is the communication mechanisms between components in a
+distributed system and how various data is persisted. Programming language
+matters in neither of those thing. There are bindings in every programming
+language for communicating over HTTP and for persisting and retrieving data
+from various purpose-build data stores.
+
 ## Redoing the architecture
 
 There are four areas of system design that I'd like to discuss in relation to
@@ -72,10 +96,11 @@ outdated information.
 
 Swift is not extensible in the sense that the core Swift software does not
 enable the scope of Swift's API to extend beyond its core mission of being a
-highly available distributed object storage system. [Swift's
-API](https://developer.openstack.org/api-ref/object-store/) is a pure data
-plane API. It is not a control plane API, meaning its API is not intended to
-perform execution of actions against some controllable resources. Instead,
+highly available distributed object storage system.
+
+[Swift's API](https://developer.openstack.org/api-ref/object-store/) is a pure
+data plane API. It is not a control plane API, meaning its API is not intended
+to perform execution of actions against some controllable resources. Instead,
 Swift's API is all about writing and reading data from one or more objects and
 defining/managing the containers/accounts associated with those objects.
 
@@ -190,7 +215,12 @@ and only supported volume manager.
 
 ### Project Mulligan's architecture
 
-Throw everything out and start over.
+For Project Mulligan, we'll be throwing out pretty much everything and starting
+over. So, out with the chaos and inconsistency. In with sensibility, simplicity
+and far fewer plug and extension points.
+
+Now that Project Mulligan's scope has been healthily trimmed, we can focus on
+only the components and requirements for a simple machine provisioning system.
 
 Screw extensibility. Seriously, screw it.
 
