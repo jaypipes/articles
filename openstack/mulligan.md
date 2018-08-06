@@ -189,6 +189,8 @@ following:
 
 That's pretty much it.
 
+### But what about everything else?!
+
 I imagine at this point, I've offended more than three quarters of the universe
 by not including in Project Mulligan's scope any of the following:
 
@@ -196,6 +198,7 @@ by not including in Project Mulligan's scope any of the following:
 * Network provisioning and management
 * Containers
 * Security
+* Monitoring and metrics
 * Orchestration
 * Filesystems
 * Deployment automation
@@ -206,6 +209,42 @@ Are these things important? Yep. Well, OK, maybe not AmigaOS. Do I want them in
 Project Mulligan's mission statement or scope? No. No, I don't.
 
 ![Sorry, not sorry](images/sorry-not-sorry-qraqsq-300.jpg "Scope of sorry.")
+
+For the record, I believe there are certain projects inside the OpenStack
+ecosystem that can and *should* live entirely outside of OpenStack.
+
+The [Gnocchi project](https://github.com/gnocchixyz/gnocchi) has already led
+the way in this regard by decoupling itself from OpenStack's community and
+tooling and standing on its own two feet out there in the big beautiful world.
+Good for Gnocchi. Seriously, good for Gnocchi.
+
+I believe Swift, Keystone, Designate and Cinder should do the same. Yes, that's
+right folks. I'm formally proposing that projects that can stand alone and
+provide a well-defined, small scope of service live outside of the OpenStack
+community. I believe that by doing so, these projects will encourage re-use
+**outside of the OpenStack echo-chamber** and be a greater benefit to the broad
+cloud software ecosystem.
+
+Some projects, like [Swift](https://docs.openstack.org/swift/latest/), are
+already ready for the umbilical cord to be cut.  I'd actually go so far as to
+say Swift was born into the OpenStack world as a full-fledged adult to begin
+with. It uses no shared OpenStack Oslo Python libraries, has no inter-service
+dependencies to speak of, does not rely on a coordinated release cycle, and its
+API is rock-solid and (yay!) does one thing and one thing well.
+
+Cinder, Designate and Keystone are more traditional OpenStack projects with the
+requisite heavy dependency on a number of common OpenStack Oslo Python
+libraries. And their APIs are not nearly as clear-cut as Swift's. But, that
+said, the services themselves are well-scoped and would benefit the larger
+cloud software ecosystem by living outside the OpenStack bubble. Cinder already
+has made inroads into the Kubernetes community by being a provider of
+persistent volumes there. Keystone and Designate, if run as separate projects
+outside the OpenStack community, would likely be forced to maintain a small
+scope of service.
+
+What benefit does the OpenStack echo-chamber give to these projects, anyway?
+Well, let's take a look at that topic in the next section about redoing the
+community.
 
 ## Redoing the community
 
@@ -369,7 +408,7 @@ trigger the release by pushing a tag. Simple is that.
 
 There are plenty people who like the large OpenStack Summit conferences.
 
-I am not one of those people.
+I am **not** one of those people.
 
 I have not attended the last two OpenStack summits; instead I've chosen to
 stick to the OpenStack Project Team Gathering events that are strictly for
@@ -475,16 +514,14 @@ opining that some negative aspects of the OpenStack ecosystem and approach have
 snuck into Kubernetes. Still, I think it's an interesting question to ponder,
 regardless.
 
-[2] Numerous folks have pointed to the "[Big
-Tent](http://inaugust.com/posts/big-tent.html)" initiative from 2014-2015 as
-being the reason that OpenStack "lost its focus". I've repeatedly called
-bullshit on this assertion, and will again do so here. The Big Tent initiative
-**did not redefine OpenStack's mission**. It was a restructuring of how the
-OpenStack Technical Committee evaluated **new project applicants** to the
-OpenStack ecosystem.
+[2] Numerous folks have pointed to the "[Big Tent](http://inaugust.com/posts/big-tent.html)"
+initiative from 2014-2015 as being the reason that OpenStack "lost its focus".
+I've repeatedly called bullshit on this assertion, and will again do so here.
+The Big Tent initiative **did not redefine OpenStack's mission**. It was a
+restructuring of how the OpenStack Technical Committee evaluated **new project
+applicants** to the OpenStack ecosystem.
 
-This is why the Big Tent was officially called "[Project Structure
-Reform](https://governance.openstack.org/tc/resolutions/20141202-project-structure-reform-spec.html)".
+This is why the Big Tent was officially called "[Project Structure Reform](https://governance.openstack.org/tc/resolutions/20141202-project-structure-reform-spec.html)".
 
 It changed governance procedures so that there was no more "Supreme Court of
 OpenStack" that had to be groveled to each time a new project came around. It
@@ -506,16 +543,15 @@ Some people think it's hard to say "no" to a feature request. Personally, I
 have no problem whatsoever saying "no" to virtually everything (saying "no" is
 basically my default answer to everyone other than my wife).
 
-Jess Frazelle's article entitled "[The Art of
-Closing](https://blog.jessfraz.com/post/the-art-of-closing/)" should be
-required reading for any contributor submitting a feature request and any
-maintainer looking for ways to not crush tender contributor feelings on a
+Jess Frazelle's article entitled "[The Art of Closing](https://blog.jessfraz.com/post/the-art-of-closing/)"
+should be required reading for any contributor submitting a feature request and
+any maintainer looking for ways to not crush tender contributor feelings on a
 feature request (if that's the sort of thing that keeps you up at night).
 
 [5] The *current* incarnation of OpenShift as of July 2018. They keep changing
 the damn thing's purpose, rewriting it in different languages, and gradually
-updating the websit that you never quite know what http://openshift.com will
-lead to in any given month.
+updating the website so that you never quite know what http://openshift.com
+will lead to in any given month.
 
 [6] My prediction is that eventually the Linux Foundation will end up subsuming
 the OpenStack (neé Open Infrastructure) Foundation and turning it into one of
@@ -524,10 +560,11 @@ CNCF folks who despise all things OpenStack that they consider to be
 vendor-driven, legacy (in CNCF world, legacy == The World Before Docker, so
 anything before 2013.) and over-architected while forgetting that many of the
 same people and companies that initially developed those over-architected
-OpenStack solutions are now, *gasp!*, working on CNCF projects. At which point
-the Apache Foundation will put out an announcement saying how they could
-see all of this coming years ago. And we'll all have a big come to Jesus (come
-to Jess?) moment and realize that, holy shit, we're all actually working on the
-same kinds of problems and mostly we've just been letting our biases about
-programming languages, SQL vs. NoSQL, and Slack vs. IRC drive wedges in between
-what should be fairly rock-solid relationships.
+OpenStack solutions are now, *gasp!*, working on CNCF projects.
+
+At which point the Apache Foundation will put out an announcement saying how
+they could see all of this coming years ago. And we'll all have a big come to
+Jesus (come to Jess?) moment and realize that, holy shit, we're all actually
+working on the same kinds of problems and mostly we've just been letting our
+biases about programming languages, SQL vs. NoSQL, and Slack vs. IRC drive
+wedges in between what *should be* fairly rock-solid relationships.
