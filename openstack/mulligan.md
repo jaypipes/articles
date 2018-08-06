@@ -98,7 +98,7 @@ be.
 It has no identity other than being open and welcoming to anyone and everyone
 that wants to jump on the Great Cloud Bandwagon in the Sky. [2]
 
-And because of this identity crisis, there is zero focus on any one particaular
+And because of this identity crisis, there is zero focus on any one particular
 thing.
 
 Well, that ends with Project Mulligan.
@@ -266,12 +266,20 @@ and mailing list posts that meander around like a bored teenager on Quaaludes.
 However, I'm tired of talking. I want to see some action taken that really
 kicks Project Mulligan into high gear.
 
-We need a Linus Torvalds [3] for Project Mulligan. A no-bullshit, this is how
-it's gonna be, type of person who is willing to say "oh fuck no" when needed.
-[4]
+Code talks volumes compared to endless specifications. I'd much rather see a
+pile of proof-of-concept code that spend six months endlessly debating the
+minutae of an upgrade path on a specification.
 
-Hell, let's have *three* of these not-necessarily-benevolent dictators. That
-way they can share the grief and bear the brunt of inevitable criticism that
+But unless we have leaders with a "walk, don't talk" mentality -- people who
+aren't afraid to break things -- I'm afraid nothing will ever change.
+
+We need no-bullshit, this is how it's gonna be, types of people willing to say
+"oh fuck no" when needed. [3] But also people who say "alright, show me in
+code" and "I accept the fact that we won't be able to see the future and
+accurately predict every tiny detail of an upgrade path or side-effect of this
+feature, but let's just do it and if we need to fix things later, we will."
+
+These leaders will *always* need to bear the brunt of inevitable criticism that
 will pour forth from those who seek to commandeer Project Mulligan for their
 own devices.
 
@@ -338,7 +346,7 @@ perspective.
 
 Many questions on the Kubernetes user mailing list seem to be for specific
 vendor *products* -- i.e. Google Cloud Platform, Google Kubernetes Engine, Red
-Hat OpenShift [5], etc -- instead of being about Kubernetes itself. This is
+Hat OpenShift [4], etc -- instead of being about Kubernetes itself. This is
 indicative of the tight coupling between the Kubernetes project and the vendors
 that host a Kubernetes SaaS offering.
 
@@ -481,7 +489,7 @@ of the employees at the OpenStack Foundation. I even (mostly) support recent
 transition to becoming the Open Infrastructure Foundation. That said, I can't
 stand the hype machining that the foundation encourages along with the Linux
 Foundation and its Cloud Native Computing Foundation (CNCF) offshoot and OPNFV
-project. [6]
+project. [5]
 
 Nor will Project Mulligan have marketing conferences. For get-togethers, there
 will be a return to the original design summit idea, crossed with a "hack days"
@@ -531,11 +539,7 @@ Despite this, many people, even people knowledgeable of OpenStack governance
 internals, continue to equate the overly broad mission of OpenStack (which,
 again, has barely changed since 2012) with the "Big Tent" initiative.
 
-[3] A Linus Torvalds without a personal attack mode, that is. It is entirely
-possible for one person to be both anti-bullshit as well as not act like a bag
-of dicks at the same time.
-
-[4] OpenStack (as a whole as well as individual OpenStack projects) has
+[3] OpenStack (as a whole as well as individual OpenStack projects) has
 suffered greatly from the inability of the maintainer community to say "no" (or
 even "fuck no").
 
@@ -548,12 +552,12 @@ should be required reading for any contributor submitting a feature request and
 any maintainer looking for ways to not crush tender contributor feelings on a
 feature request (if that's the sort of thing that keeps you up at night).
 
-[5] The *current* incarnation of OpenShift as of July 2018. They keep changing
+[4] The *current* incarnation of OpenShift as of July 2018. They keep changing
 the damn thing's purpose, rewriting it in different languages, and gradually
 updating the website so that you never quite know what http://openshift.com
 will lead to in any given month.
 
-[6] My prediction is that eventually the Linux Foundation will end up subsuming
+[5] My prediction is that eventually the Linux Foundation will end up subsuming
 the OpenStack (neé Open Infrastructure) Foundation and turning it into one of
 its projects like OPNFV. At which point, there will be a huge backlash from the
 CNCF folks who despise all things OpenStack that they consider to be
