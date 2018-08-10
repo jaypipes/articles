@@ -189,6 +189,36 @@ following:
 
 That's pretty much it.
 
+### Who is Project Mulligan's target audience?
+
+I got some early feedback on some of these ideas from OpenStack's bull in a
+China shop, [Monty Taylor](https://en.wikipedia.org/wiki/Monty_Taylor).
+
+Suffice to say, Monty didn't like Project Mulligan, and for very good reason.
+
+Users of "cloud APIs" are not Project Mulligan's audience.
+
+Cloud APIs are those things that allow a user to manage their applications that
+run on cloud (i.e. someone else's) infrastructure. Cloud APIs allow lifecycle
+management of virtual or baremetal machines and containers. Cloud APIs allow a
+user to create some storage buckets and place objects in those buckets. Cloud
+APIs enable the construction of private networks that applications running in
+that cloud can use to communicate with each other and with the outside world.
+Cloud APIs encourage users to think in terms of automated use and re-use of
+some technology infrastructure.
+
+Cloud APIs are awesome!
+
+But that's not what Project Mulligan is for. Project Mulligan's target audience
+is the *providers* of machines, not the *users* of those machines.
+
+I see a clear line between these audiences. And I'd like Project Mulligan to
+focus on the operator/provider audience, not the cloud API user audience.
+
+Does the cloud ecosystem need One True Cloud API [6]? Perhaps it does. But
+Project Mulligan won't be focused on making that. Besides, Monty will need
+something to occupy his time when not tweeting.
+
 ### But what about everything else?!
 
 I imagine at this point, I've offended more than three quarters of the universe
@@ -274,7 +304,7 @@ But unless we have leaders with a "walk, don't talk" mentality -- people who
 aren't afraid to break things -- I'm afraid nothing will ever change.
 
 We need no-bullshit, this is how it's gonna be, types of people willing to say
-"oh fuck no" when needed. [3] But also people who say "alright, show me in
+"oh fuck no" when needed [3]. But also people who say "alright, show me in
 code" and "I accept the fact that we won't be able to see the future and
 accurately predict every tiny detail of an upgrade path or side-effect of this
 feature, but let's just do it and if we need to fix things later, we will."
@@ -572,3 +602,9 @@ Jesus (come to Jess?) moment and realize that, holy shit, we're all actually
 working on the same kinds of problems and mostly we've just been letting our
 biases about programming languages, SQL vs. NoSQL, and Slack vs. IRC drive
 wedges in between what *should be* fairly rock-solid relationships.
+
+[6] As opposed to the existing environment that cloud users find themselves in,
+which is that every cloud vendor (AWS, GCP, Azure, DigitalOcean, etc) have
+their own APIs for performing actions against the resources exposed by their
+particular underlying infrastructure. You buy into that vendor's API when you
+buy into the service they are providing. This is called lock-in.
