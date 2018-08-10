@@ -26,7 +26,7 @@ Regardless of which programming language might be chosen for Project Mulligan,
 I doubt this love/hate relationship would change. At the end of the day, what
 is most important is the communication mechanisms between components in a
 distributed system and how various data is persisted. Programming language
-matters in neither of those thing. There are bindings in every programming
+matters in neither of those things. There are bindings in every programming
 language for communicating over HTTP and for persisting and retrieving data
 from various purpose-build data stores.
 
@@ -260,6 +260,103 @@ dependent low-level services looks like this:
 
 All Project Mulligan services and workers will be entirely stateless. All state
 will be persisted to either `etcd` or a RDBMS.
+
+### The account service
+
+In order to provide multi-tenancy from the start, Project Mulligan clearly
+needs a service that will provide account and identity management support. If
+OpenStack Keystone were a separate, stand-alone service that had a gRPC API
+interface, we'd use that. But since it's not, we'll have to write our own from
+scratch, potentially with an adapter that understands the useful part of the
+OpenStack Keystone REST API -- you know, users, projects and roles
+(assignments). The rest of the Keystone API, including the hand-rolled token
+API, would be cut out. Application credentials would stay but would just be a
+type of account instead of a separate thing that lived under the user resource.
+
+We'll use JSON Web Tokens (JWT) as the payload format for any authorization
+tokens that need to be passed between Project Mulligan service endpoints (or
+outside to external endpoints).
+
+### The metadata service
+
+All objects in the Project Mulligan system will be identified by a UUID.
+However, as we all know, remembering UUIDs and passing them around manually is
+a pain in the ass. So, we need a way of associating a unique name and URI-clean
+slug with an object in the system. The metadata service will provide a simple
+UUID -> name or slug lookup (and reverse lookup) service. Data stores for
+individual services, whether those data stores be SQL databases or not, will
+not store any name or slug information. Only UUID keys for objects that the
+service controls. The metadata service will act as a cache for this kind of
+name/slug identifying information. It will be backed by an `etcd` data store.
+
+The second purpose of the metadata service will be to store and retrieve two
+other kinds of information decorating objects in the system:
+
+* **tags**: these are simple strings that are settable on any object in the
+  system and are not validated or protected in any way
+* **metadefs**: these are specific named attributes that may be defined by the
+  system or an end user, protected against changes and given a validation
+  schema
+
+If you're familiar with the OpenStack [Glance Metadefs](https://docs.openstack.org/glance/pike/user/glancemetadefcatalogapi.html)
+concept, that's pretty much what the second item is.
+
+### The inventory management service
+
+How resources are tracked, claimed and consumed in a software system is a
+critical concept to get *right*, and get right from the start. If there's one
+thing I've learned working on the scheduler and placement services in
+OpenStack, it's that the consistency and accuracy of the data that goes into an
+inventory management system dictates the quality of all systems built on top of
+that data, including capacity management, billing, reservations,
+scheduling/placement and quota management.
+
+You need to accurately and efficiently represent both the **structure** of the
+resources and providers of resources within the system as well as the
+**process** by which those resources are consumed by users of the system.
+
+You cannot build a quality resource management system on top of a free-for-all
+land-grab where each vendor essentially redefines its notion of what a resource
+is. It was tried in OpenStack Nova. It failed and is still causing headaches
+today. Vendors have shifted their focus from the scorched Earth they've left
+behind in OpenStack for the new fertile hype-hunting grounds of Kubernetes,
+with Intel and NVIDIA pushing for [more](https://docs.google.com/document/d/1EZQJdV9OObt8rA2epZDDLDVtoIAUQrqEZHy4oku0MFk/edit?ts=5b2aa70b#) and [more](https://github.com/NVIDIA/k8s-device-plugin) extensibility in how they track
+[resource](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#extended-resources) inventory and consumption. With that extensibility comes a complete
+lack of interoperability and, unless the Kubernetes community is very careful,
+a quagmire of unmaintainable code.
+
+Project Mulligan's resource management service will be responsible for storing
+inventory information for resource providers in the system. The structure and
+relationship of providers to each other will also be the purview of the
+resource management service. In other words, the resource management service
+will understand groups of providers, trees of providers, relative distances
+between providers, etc.
+
+The process by which consumers of resources request those resources is called a
+**resource claim**. I've come to realize over the last four years or so that
+the system that handles the consumption and claiming of resources must be able
+to understand the temporal aspects of the resource request as well as the
+quantitative aspects of the request. What this means is that I believe the
+system that doles out resources to consumers of those resources needs to
+implement a resource reservation system itself. After all, a resource
+reservation system is simply a resource allocation system with an extra
+temporal dimension. Storing this temporal data along with inventory and usage
+information makes the most natural sense from a systems design perspective.
+
+So, good news for the [OpenStack Blazar](https://docs.openstack.org/blazar/latest/)
+project, your functionality is going to be subsumed by the Project Mulligan
+resource management service.
+
+### The control service and executors
+
+The control service will be nothing more than a place to send command requests.
+These command requests will be validated by the control service and then
+packaged up into tasks that get pushed onto a simple queue managed by NATS.
+
+The executors will pull a task off the task queue and execute it, sending the
+results of the task back on to a separate results queue. The results queue will
+be processed by an executor whose job will be to simply save the results state
+to some data store.
 
 ## Redoing the API
 

@@ -267,7 +267,7 @@ However, I'm tired of talking. I want to see some action taken that really
 kicks Project Mulligan into high gear.
 
 Code talks volumes compared to endless specifications. I'd much rather see a
-pile of proof-of-concept code that spend six months endlessly debating the
+pile of proof-of-concept code than spend six months endlessly debating the
 minutae of an upgrade path on a specification.
 
 But unless we have leaders with a "walk, don't talk" mentality -- people who
@@ -324,7 +324,7 @@ to write code or work on deployment stuff for OpenStack. Don't shit where you
 eat, my friend."
 
 Yes, you're absolutely correct about that, my friend. And thank you for being
-concerned about my digestive system.
+concerned about my alimentary canal.
 
 That said, being "a vendor" is exhibiting a certain set of behaviours when
 participating (or not) in an open source community. Being "a vendor" doesn't
