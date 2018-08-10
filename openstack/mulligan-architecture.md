@@ -251,7 +251,10 @@ I'm envisioning the following dependencies:
 * A relational database server for storing highly relational data that needs to
   be efficiently queried in aggregate
 * [NATS](https://www.nats.io/) for a simple task based queue service that the
-  executors will pop tasks from
+  executors will pop tasks from. Or maybe [Gearman](http://gearman.org/)
+  instead of NATS, since it's been around longer and Monty won't blow his shit
+  about yet another not-invented-here simple queueing application being hosted
+  by the CNCF...
 
 From a birdseye view, the topology of Project Mulligan and its components and
 dependent low-level services looks like this:
