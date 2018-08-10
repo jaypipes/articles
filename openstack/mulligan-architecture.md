@@ -301,7 +301,7 @@ other kinds of information decorating objects in the system:
 If you're familiar with the OpenStack [Glance Metadefs](https://docs.openstack.org/glance/pike/user/glancemetadefcatalogapi.html)
 concept, that's pretty much what the second item is.
 
-### The inventory management service
+### The resource service
 
 How resources are tracked, claimed and consumed in a software system is a
 critical concept to get *right*, and get right from the start. If there's one
@@ -484,17 +484,62 @@ a set of configuration options that are tunable at runtime.
 
 ### Multi-tenancy and isolation
 
+From the beginning, nearly all [4] OpenStack components were designed for
+multi-tenancy. This means the systems are designed for multiple groups of one
+or more users to simultaneously utilize the service without impact to each
+other.
+
+The actions those users take should not impact other users of the system, nor
+should the resources owned by one user have any access to resources owned by
+another user. In other words, by default, strong isolation exists between
+tenants of the system.
+
+Project Mulligan will likewise be built from the ground up with multi-tenancy
+as a design tenet. Resources should be wholly owned by a tenant (group of
+users) and isolated from each other.
+
 ### Partitioning and failure domains
 
 Project Mulligan should have clear and concise definitions of the ways in which
 the system itself may be divided -- both for reasons of scale as well as for
 limiting a failure's effects.
 
+This implies that all objects in the system should have an attribute that
+describes the shard or partition that the object "lives in".
+
+Kubernetes refers to a collection of controllers and nodes as a "cluster",
+which is the closest concept it has [5] to a system partition or shard. There
+is no geographic nor failure domain connotation to a Kubernetes cluster.
+
+OpenStack unfortunately has no consistent terminology nor model of
+partitioning. Some services have the concept of an "availability zone".
+However, as [I've noted](http://lists.openstack.org/pipermail/openstack-dev/2014-March/031106.html) on the openstack-dev mailing list before, the OpenStack
+term of "availability zone" is a complete pile of vestigial poo that should be
+flushed down the sewer pipes.
+
+In Project Mulligan, we'll call this partitioning concept a "region". Regions
+may be hierarchical in nature, and there need not be a single root region.
+Regions may indicate via attributes what users should expect with regards to
+failure of various systems -- power, network, etc -- and their impact on other
+regions. Regions will have attributes that indicate their visibility to users,
+allowing both internal and external partitions of the system to be managed
+jointly but advertised separately.
+
 ## Conclusion
 
 In case it hasn't become obvious by now, Project Mulligan isn't OpenStack v2.
 It's a complete change of direction, an entirely trimmed and reworked vision of
 a very small chunk of what today's OpenStack services are.
+
+Is this better than slow, incremental backwards-compatible changes to OpenStack
+v1, as [some have suggested](http://lists.openstack.org/pipermail/openstack-dev/2018-July/131961.html)? I have no idea. But I'm damn sure it will be more
+fun to work on. And isn't that what life is really all about?
+
+Thanks for reading.
+
+![Peace out.](https://media.giphy.com/media/QoesEe6tCbLyw/giphy.gif)
+
+-jay
 
 ## Footnotes
 
@@ -514,3 +559,12 @@ which is why Project Mulligan will be a resounding success.
 database for state persistence, which is basically the Neutron authors
 relenting to vendor pressure to just have Neutron be a very thin shim over some
 proprietary network administration technology -- like [Juniper Contrail](https://github.com/Juniper/contrail-neutron-plugin).
+
+[4] One the largest, most glaring exceptions to this multi-tenancy rule,
+unfortunately is OpenStack Ironic, the baremetal provisioning system.
+
+[5] Kubernetes actually doesn't really define a "cluster" to be something
+specific, unlike many other terms and concepts that Kubernetes *does* define --
+like Pod, Deployment, etc. The term "cluster" seems to be just something the
+Kubernetes community landed on to refer to a collection of nodes comprising a
+single control plane...
